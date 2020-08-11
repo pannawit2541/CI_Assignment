@@ -111,19 +111,31 @@ class NeuralNetwork(object):
         return np.average((target - output) ** 2)
 
 def Preprocessing():
+
+        # import data set
         with open("Flood_dataset.txt", "r") as f:
             content = f.readlines()
         del content[0:3]
 
+        # split data set
         data = []
         for X in content:
             data.append(X.split())
+
+        # convert data to list 
         output = [list(map(int, X[8:])) for X in data]
+        input = [list(map(int, X[:8])) for X in data]
 
-        input = [list(map(int, X[:7])) for X in data]
-
+        # Normalization by Standard score
         input = np.array(input)
+        input_mean = input.mean(axis = 0)
+        input_sd = input.std(axis = 0)
+        
         output = np.array(output)
+        output_mean = output.mean(axis = 0)
+        output_sd = output.std(axis = 0)
+
+        print((input[0,:]-input_mean)/input_sd)
         inputSize = input.shape[1]
         outputSize = output.shape[1]
 
@@ -143,6 +155,6 @@ print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
 hiddenSizeStr = '2'
 hiddenSize = hiddenSizeStr.split("-")
 hiddenSize = list(map(int, hiddenSize))
-NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
+#NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
 
-NN.train(X, Y, 50, 0.1)
+#NN.train(X, Y, 50, 0.1)
