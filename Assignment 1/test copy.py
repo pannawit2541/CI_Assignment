@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 
 class NeuralNetwork(object):
@@ -13,7 +14,7 @@ class NeuralNetwork(object):
         # initiate weights
         weights = []
         for i in range(len(layers)-1):
-            w = 2*np.random.rand(layers[i], layers[i+1])-1
+            w = np.random.rand(layers[i], layers[i+1])
             weights.append(w)
         self.weights = weights
 
@@ -29,6 +30,7 @@ class NeuralNetwork(object):
             d = np.zeros((layers[i], layers[i + 1]))
             derivatives.append(d)
         self.derivatives = derivatives
+        self.derivatives_old = copy.deepcopy(self.derivatives)
 
     def sigmoid(self, s, deriv=False):
         if (deriv == True):
@@ -71,7 +73,7 @@ class NeuralNetwork(object):
             # backpropogate the next error
             error = np.dot(delta, self.weights[i].T)
 
-    def train(self, X, Y, epochs, learning_rate):
+    def train(self, X, Y, epochs, learning_rate,momentumRate):
         # now enter the training loop
         for i in range(epochs):
             sum_errors = 0
@@ -84,31 +86,43 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
-
+                #print(output, " - ", target)
+                if i > 0 :
+                    self.derivatives_old = copy.deepcopy(self.derivatives)
                 self.backPropagate(error)
-
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
-                self.gradient_descent(learning_rate)
+                self.gradient_descent(learning_rate,momentumRate)
 
                 # keep track of the MSE for reporting later
                 sum_errors += self._mse(target, output)
 
             # Epoch complete, report the training error
-            print("Error: {} at epoch {}".format(sum_errors / len(X), i+1))
+            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
 
         print("Training complete!")
         print("=====")
 
-    def gradient_descent(self, learningRate=1):
+    def gradient_descent(self, learningRate=1,momentumRate=1):
         # update the weights by stepping down the gradient
         for i in range(len(self.weights)):
             weights = self.weights[i]
             derivatives = self.derivatives[i]
-            weights += derivatives * learningRate
+            derivatives_old  = self.derivatives_old[i]
+            weights += (derivatives * learningRate) + (derivatives_old*momentumRate)
 
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
+
+def convert_output(max,min,data,flag = False):
+    if flag == True:
+        return  ( data*(max-min)) + min
+    return  (data - min) / (max - min)
+
+def convert_input(data):
+    mean = data.mean(axis = 0)
+    sd = data.std(axis = 0)
+    return (data- mean)/ sd
 
 def Preprocessing():
 
@@ -126,16 +140,8 @@ def Preprocessing():
         output = [list(map(int, X[8:])) for X in data]
         input = [list(map(int, X[:8])) for X in data]
 
-        # Normalization by Standard score
         input = np.array(input)
-        input_mean = input.mean(axis = 0)
-        input_sd = input.std(axis = 0)
-        
         output = np.array(output)
-        output_mean = output.mean(axis = 0)
-        output_sd = output.std(axis = 0)
-
-        print((input[0,:]-input_mean)/input_sd)
         inputSize = input.shape[1]
         outputSize = output.shape[1]
 
@@ -145,6 +151,9 @@ def Preprocessing():
 #if __name__ == "__main__":
 
 X, Y, inputSize, outputSize = Preprocessing()
+max,min = Y.max(),Y.min()
+y = convert_output(max,min,Y)
+x = convert_input(X)
 
 print("What Size of Hidden layer Neural Network ?")
 print(" -- Example : '4-2-2' --")
@@ -152,9 +161,10 @@ print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
 #hiddenSizeStr = input('Size of Hidden layer : ')
 
 
-hiddenSizeStr = '2'
+hiddenSizeStr = '4-5'
 hiddenSize = hiddenSizeStr.split("-")
 hiddenSize = list(map(int, hiddenSize))
-#NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
 
-#NN.train(X, Y, 50, 0.1)
+NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
+NN.train(x, y, 1000, 0.1,0.5)
+
