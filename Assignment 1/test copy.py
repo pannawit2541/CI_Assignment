@@ -99,8 +99,7 @@ class NeuralNetwork(object):
 
             # Epoch complete, report the training error
             print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
-
-        print("Training complete!")
+        print("Training complete! : ",sum_errors/len(X))
         print("=====")
 
     def gradient_descent(self, learningRate=1,momentumRate=1):
@@ -147,10 +146,48 @@ def Preprocessing():
 
         return input, output, inputSize, outputSize
 
+def Preprocessing_Cross():
+    # import data set
+        with open("cross.pat", "r") as f:
+            content = f.readlines()
+        del content[0:3]
 
-#if __name__ == "__main__":
+        # split data set
+        data = []
+        output = []
+        input = []
+        for i,X in enumerate(content):
+            if X[0] != 'p':
+                if (i+1)%3 == 0:
+                    a,b = X.split()
+                    output.append([int(a),int(b)])
+                else:
+                    a,b = X.split()
+                    input.append([float(a),float(b)])
+        input = np.array(input)
+        output = np.array(output)
+        inputSize = input.shape[1]
+        outputSize = output.shape[1]
 
-X, Y, inputSize, outputSize = Preprocessing()
+        return input, output, inputSize, outputSize
+  
+
+def cross_validations_split(dataset,output_dataset,folds):
+    fold_size = int(dataset.shape[0] * folds/100)
+    k = 0
+    index = []
+    for i in range(1,folds+1):
+        if i < folds:
+            index.append([k,i*fold_size])
+        else:
+            index.append([k,dataset.shape[0]])
+        k = i*fold_size
+    return index
+
+
+
+X, Y, inputSizeX, outputSizeY = Preprocessing()
+A, B, inputSizeA, outputSizeB = Preprocessing_Cross()
 max,min = Y.max(),Y.min()
 y = convert_output(max,min,Y)
 x = convert_input(X)
@@ -164,7 +201,23 @@ print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
 hiddenSizeStr = '4-5'
 hiddenSize = hiddenSizeStr.split("-")
 hiddenSize = list(map(int, hiddenSize))
+#index = cross_validations_split(x,y,10)
+index = cross_validations_split(A,B,10)
+#NN = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
+NN = NeuralNetwork(hiddenSize, inputSizeA, outputSizeB)
 
-NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
-NN.train(x, y, 1000, 0.1,0.5)
+"""
+for a,b in index:
+    inTest = np.concatenate((x[:a],x[b+1:]))
+    outTest = np.concatenate((y[:a],y[b+1:]))
+    NN.train(inTest, outTest, 1000, 0.1,0.5)
+    print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
+ 
+"""
+for a,b in index:
+    inTest = np.concatenate((A[:a],A[b+1:]))
+    outTest = np.concatenate((A[:a],B[b+1:]))
+    NN.train(inTest, outTest, 1000, 0.1,0.5)
+    print(np.sum(NN._mse(NN.feedForward(A[a:b,:]),B[a:b,:]),axis=0)) 
+
 
