@@ -1,7 +1,6 @@
 import numpy as np
 import copy
 
-
 class NeuralNetwork(object):
     def __init__(self, hiddenSize, inputSize, outputSize):
         # initiate layers
@@ -75,6 +74,7 @@ class NeuralNetwork(object):
 
     def train(self, X, Y, epochs, learning_rate,momentumRate):
         # now enter the training loop
+        self.sum_all_err = [] 
         for i in range(epochs):
             sum_errors = 0
 
@@ -98,8 +98,9 @@ class NeuralNetwork(object):
                 sum_errors += self._mse(target, output)
 
             # Epoch complete, report the training error
-            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
-        print("Training complete! : ",sum_errors/len(X))
+            #print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
+        self.sum_all_err.append(round(sum_errors/len(X),4))
+        print("Training complete! : ",round(sum_errors/len(X),4))
         print("=====")
 
     def gradient_descent(self, learningRate=1,momentumRate=1):
@@ -147,32 +148,6 @@ def Preprocessing():
 
         return input, output, inputSize, outputSize
 
-def Preprocessing_Cross():
-    # import data set
-        with open("cross.pat", "r") as f:
-            content = f.readlines()
-        del content[0:3]
-
-        # split data set
-        output = []
-        input = []
-        for i,X in enumerate(content):
-            if X[0] != 'p':
-                if (i+1)%3 == 0:
-                    a,b = X.split()
-                    output.append([int(a),int(b)])
-                else:
-                    a,b = X.split()
-                    input.append([float(a),float(b)])
-        input = np.array(input)
-        output = np.array(output)
-        #print(input)
-        inputSize = input.shape[1]
-        outputSize = output.shape[1]
-
-        return input, output, inputSize, outputSize
-  
-
 def cross_validations_split(dataset,output_dataset,folds):
     fold_size = int(dataset.shape[0] * folds/100)
     k = 0
@@ -186,39 +161,41 @@ def cross_validations_split(dataset,output_dataset,folds):
     return index
 
 
-
-X, Y, inputSizeX, outputSizeY = Preprocessing()
-A, B, inputSizeA, outputSizeB = Preprocessing_Cross()
-max,min = Y.max(),Y.min()
-y = convert_output(max,min,Y)
-x = convert_input(X)
-
 print("What Size of Hidden layer Neural Network ?")
 print(" -- Example : '4-2-2' --")
 print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
 #hiddenSizeStr = input('Size of Hidden layer : ')
+learningRate = input('Learning Rate : ')
+learningRate = float(learningRate)
+momentumRate = input('Momentum Rate : ')
+momentumRate = float(momentumRate)
+epochs = input('Epochs : ')
+epochs = int(epochs)
 
+X, Y, inputSizeX, outputSizeY = Preprocessing()
+max,min = Y.max(),Y.min()
+y = convert_output(max,min,Y)
+x = convert_input(X)
 
-hiddenSizeStr = '2'
-hiddenSize = hiddenSizeStr.split("-")
-hiddenSize = list(map(int, hiddenSize))
-#index = cross_validations_split(x,y,10)
-index = cross_validations_split(A,B,10)
-NN = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
-#NN = NeuralNetwork(hiddenSize, inputSizeA, outputSizeB)
+#hiddenSize = hiddenSizeStr.split("-")
+#hiddenSize = list(map(int, hiddenSize))
+index = cross_validations_split(x,y,10)
 
+hiddenSize_all = [[4],[4,4],[4,4,4],[4,4,4,4]]
+avg_predict = []
+avg_traing = []
 
-for a,b in index:
-    inTest = np.concatenate((x[:a],x[b+1:]))
-    outTest = np.concatenate((y[:a],y[b+1:]))
-    NN.train(inTest, outTest, 1000, 0.1,0.5)
-    print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
- 
-"""
-for a,b in index:
-    inTest = np.concatenate((A[:a],A[b+1:]))
-    outTest = np.concatenate((A[:a],B[b+1:]))
-    NN.train(inTest, outTest, 1000, 0.1,0.5)
-    print(np.sum(NN._mse(NN.feedForward(A[a:b,:]),B[a:b,:]),axis=0)) 
+for hiddenSize in hiddenSize_all:
+    NN = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
+    print(hiddenSize)
+    i = 1
+    for a,b in index:
+        print("---------------- 10-folds Cross validation No. : ", i ," ----------------",)
+        inTest = np.concatenate((x[:a],x[b+1:]))
+        outTest = np.concatenate((y[:a],y[b+1:]))
+        NN.train(inTest, outTest, epochs, learningRate ,momentumRate)
 
-"""
+        print("Predict data : [",a,b,"]")
+        print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
+        i+=1
+
