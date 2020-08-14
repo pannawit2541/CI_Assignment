@@ -188,14 +188,18 @@ avg_traing = []
 for hiddenSize in hiddenSize_all:
     NN = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
     print(hiddenSize)
+    sum_avg_train = 0
+    sum_avg_predic = 0
     i = 1
     for a,b in index:
         print("---------------- 10-folds Cross validation No. : ", i ," ----------------",)
         inTest = np.concatenate((x[:a],x[b+1:]))
         outTest = np.concatenate((y[:a],y[b+1:]))
         NN.train(inTest, outTest, epochs, learningRate ,momentumRate)
-
+        sum_avg_train += np.mean(NN.sum_all_err)
         print("Predict data : [",a,b,"]")
-        print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
+        sum_avg_predic += np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)
+        #print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
         i+=1
-
+    avg_traing.append(sum(sum_avg_train)/10)
+    avg_predict.append(sum(sum_avg_predic)/10)
