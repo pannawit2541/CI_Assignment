@@ -14,7 +14,7 @@ class NeuralNetwork(object):
         # initiate weights
         weights = []
         for i in range(len(layers)-1):
-            w = np.random.rand(layers[i], layers[i+1])-1
+            w = np.random.rand(layers[i], layers[i+1])
             weights.append(w)
         self.weights = weights
 
@@ -77,7 +77,7 @@ class NeuralNetwork(object):
         # now enter the training loop
         for i in range(epochs):
             sum_errors = 0
-            
+
             # iterate through all the training data
             for j, input in enumerate(X):
                 target = Y[j]
@@ -86,7 +86,7 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
-                print(output, " - ", target)
+                #print(output, " - ", target)
                 if i > 0 :
                     self.derivatives_old = copy.deepcopy(self.derivatives)
                 self.backPropagate(error)
@@ -98,8 +98,7 @@ class NeuralNetwork(object):
                 sum_errors += self._mse(target, output)
 
             # Epoch complete, report the training error
-            #print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
-        self.sum_all_err = sum_errors/len(X)
+            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
         print("Training complete! : ",sum_errors/len(X))
         print("=====")
 
@@ -188,11 +187,11 @@ def cross_validations_split(dataset,output_dataset,folds):
 
 
 
-X, Y, inputSizeX, outputSizeY = Preprocessing()
+#X, Y, inputSizeX, outputSizeY = Preprocessing()
 A, B, inputSizeA, outputSizeB = Preprocessing_Cross()
-max,min = Y.max(),Y.min()
-y = convert_output(max,min,Y)
-x = convert_input(X)
+#max,min = Y.max(),Y.min()
+#y = convert_output(max,min,Y)
+#x = convert_input(X)
 
 print("What Size of Hidden layer Neural Network ?")
 print(" -- Example : '4-2-2' --")
@@ -208,28 +207,17 @@ index = cross_validations_split(A,B,10)
 #NN = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
 NN = NeuralNetwork(hiddenSize, inputSizeA, outputSizeB)
 
-'''
+"""
 for a,b in index:
-    inTest = np.concatenate((x[:a],x[b+1:]))
+    inTest = np.concatenate((x:a],x[b+1:]))
     outTest = np.concatenate((y[:a],y[b+1:]))
     NN.train(inTest, outTest, 1000, 0.1,0.5)
     print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
  
-'''
-sum_avg_train = 0
-sum_avg_predic = 0
+"""
 for a,b in index:
     inTest = np.concatenate((A[:a],A[b+1:]))
-    outTest = np.concatenate((B[:a],B[b+1:]))
-    
-    NN.train(inTest, outTest, 1000, 0.8,0.2)
+    outTest = np.concatenate((A[:a],B[b+1:]))
+    NN.train(inTest, outTest, 1000, 0.1,0.5)
+    print(np.sum(NN._mse(NN.feedForward(A[a:b,:]),B[a:b,:]),axis=0)) 
 
-    sum_avg_train += (NN.sum_all_err)
-
-
-    #print(np.sum(NN._mse(NN.feedForward(A[a:b,:]),B[a:b,:]),axis=0)) 
-    sum_avg_predic += np.sum(NN._mse(NN.feedForward(A[a:b,:]),B[a:b,:]),axis=0)
-
-print("AAAAAAAAAAAAAAAAAAAAAA")
-print(sum_avg_train/10)
-print(sum_avg_predic/10)

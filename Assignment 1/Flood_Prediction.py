@@ -74,7 +74,6 @@ class NeuralNetwork(object):
 
     def train(self, X, Y, epochs, learning_rate,momentumRate):
         # now enter the training loop
-        self.sum_all_err = [] 
         for i in range(epochs):
             sum_errors = 0
 
@@ -99,8 +98,8 @@ class NeuralNetwork(object):
 
             # Epoch complete, report the training error
             #print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
-        self.sum_all_err.append(round(sum_errors/len(X),4))
-        print("Training complete! : ",round(sum_errors/len(X),4))
+        self.sum_all_err = sum_errors/len(X)
+        print("Training complete! : ",sum_errors/len(X),4)
         print("=====")
 
     def gradient_descent(self, learningRate=1,momentumRate=1):
@@ -145,7 +144,6 @@ def Preprocessing():
         #print(output)
         inputSize = input.shape[1]
         outputSize = output.shape[1]
-
         return input, output, inputSize, outputSize
 
 def cross_validations_split(dataset,output_dataset,folds):
@@ -165,12 +163,12 @@ print("What Size of Hidden layer Neural Network ?")
 print(" -- Example : '4-2-2' --")
 print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
 #hiddenSizeStr = input('Size of Hidden layer : ')
-learningRate = input('Learning Rate : ')
-learningRate = float(learningRate)
-momentumRate = input('Momentum Rate : ')
-momentumRate = float(momentumRate)
-epochs = input('Epochs : ')
-epochs = int(epochs)
+#learningRate = input('Learning Rate : ')
+#learningRate = float(learningRate)
+#momentumRate = input('Momentum Rate : ')
+#momentumRate = float(momentumRate)
+#epochs = input('Epochs : ')
+#epochs = int(epochs)
 
 X, Y, inputSizeX, outputSizeY = Preprocessing()
 max,min = Y.max(),Y.min()
@@ -181,13 +179,16 @@ x = convert_input(X)
 #hiddenSize = list(map(int, hiddenSize))
 index = cross_validations_split(x,y,10)
 
-hiddenSize_all = [[4],[4,4],[4,4,4],[4,4,4,4]]
+hiddenSize = [4,4,4]
+learningRate_all = [0.1,0.2]
+momentumRate = 0.5
+epochs = 10
 avg_predict = []
 avg_traing = []
 
-for hiddenSize in hiddenSize_all:
+for learningRate in learningRate_all:
     NN = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
-    print(hiddenSize)
+    print(learningRate)
     sum_avg_train = 0
     sum_avg_predic = 0
     i = 1
@@ -196,10 +197,25 @@ for hiddenSize in hiddenSize_all:
         inTest = np.concatenate((x[:a],x[b+1:]))
         outTest = np.concatenate((y[:a],y[b+1:]))
         NN.train(inTest, outTest, epochs, learningRate ,momentumRate)
-        sum_avg_train += np.mean(NN.sum_all_err)
+        sum_avg_train += NN.sum_all_err
+        
         print("Predict data : [",a,b,"]")
+        #print(np.mean(NN.sum_all_err))
+        #print(round(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0),4))
+        print(NN.sum_all_err)
+        print("------------------------")
         sum_avg_predic += np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)
+        
+        #print(sum_avg_predic)
         #print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
         i+=1
-    avg_traing.append(sum(sum_avg_train)/10)
-    avg_predict.append(sum(sum_avg_predic)/10)
+    avg_traing.append(sum_avg_train)
+    avg_predict.append(sum_avg_predic)
+
+
+#for i in range(len(learningRate_all)):
+#    print(avg_predict/10)
+#    print(avg_traing/10)
+#    print("==================")
+    
+
