@@ -200,7 +200,7 @@ print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
 #hiddenSizeStr = input('Size of Hidden layer : ')
 
 
-hiddenSizeStr = '3'
+hiddenSizeStr = '3-3'
 hiddenSize = hiddenSizeStr.split("-")
 hiddenSize = list(map(int, hiddenSize))
 #index = cross_validations_split(x,y,10)
