@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import sys
 
 
 class NeuralNetwork(object):
@@ -86,10 +87,13 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
-                print(output, " - ", target)
-                if i > 0 :
+                #print(output, " - ", target)
+                if i == 0 :
+                    self.backPropagate(error)
                     self.derivatives_old = copy.deepcopy(self.derivatives)
-                self.backPropagate(error)
+                else:
+                    self.derivatives_old = copy.deepcopy(self.derivatives)
+                    self.backPropagate(error)
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
                 self.gradient_descent(learning_rate,momentumRate)
@@ -98,7 +102,7 @@ class NeuralNetwork(object):
                 sum_errors += self._mse(target, output)
 
             # Epoch complete, report the training error
-            #print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
+            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
         self.sum_all_err = sum_errors/len(X)
         print("Training complete! : ",sum_errors/len(X))
         print("=====")
@@ -109,7 +113,7 @@ class NeuralNetwork(object):
             weights = self.weights[i]
             derivatives = self.derivatives[i]
             derivatives_old  = self.derivatives_old[i]
-            weights += (derivatives * learningRate) + (derivatives_old*momentumRate)
+            weights += (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
 
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
@@ -188,48 +192,59 @@ def cross_validations_split(dataset,output_dataset,folds):
 
 
 
-X, Y, inputSizeX, outputSizeY = Preprocessing()
-A, B, inputSizeA, outputSizeB = Preprocessing_Cross()
-max,min = Y.max(),Y.min()
-y = convert_output(max,min,Y)
-x = convert_input(X)
+model = 'input'
+while(True):
+    print(' -- Please press one to training --> A or B -- ')
+    print(' -- A : flood_dataset , B : cross_dataset -- ')
+    print(' -- q : to exit -- ')
+    model = input()
+    print(type(model))
+    if model == 'q' or model == 'Q':
+        sys.exit()
+    elif model == 'A' or model == 'a' or model == 'B' or model == 'b' or  model == 'q' :
+        break
+
 
 print("What Size of Hidden layer Neural Network ?")
 print(" -- Example : '4-2-2' --")
 print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
-#hiddenSizeStr = input('Size of Hidden layer : ')
-
-
-hiddenSizeStr = '3-3'
+hiddenSizeStr = input('Size of Hidden layer : ')
+learningRate = input('Learning Rate : ')
+learningRate = float(learningRate)
+momentumRate = input('Momentum Rate : ')
+momentumRate = float(momentumRate)
+epochs = input('Epochs : ')
+epochs = int(epochs)
 hiddenSize = hiddenSizeStr.split("-")
 hiddenSize = list(map(int, hiddenSize))
-#index = cross_validations_split(x,y,10)
-index = cross_validations_split(A,B,10)
-#NN = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
-NN = NeuralNetwork(hiddenSize, inputSizeA, outputSizeB)
 
-'''
-for a,b in index:
-    inTest = np.concatenate((x[:a],x[b+1:]))
-    outTest = np.concatenate((y[:a],y[b+1:]))
-    NN.train(inTest, outTest, 1000, 0.1,0.5)
-    print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
- 
-'''
 sum_avg_train = 0
-sum_avg_predic = 0
-for a,b in index:
-    inTest = np.concatenate((A[:a],A[b+1:]))
-    outTest = np.concatenate((B[:a],B[b+1:]))
-    
-    NN.train(inTest, outTest, 1000, 0.8,0.2)
+sum_avg_predict = 0
 
-    sum_avg_train += (NN.sum_all_err)
+if model == 'A' or model == 'a':
+    X, Y, inputSizeX, outputSizeY = Preprocessing()
+    max,min = Y.max(),Y.min()
+    y = convert_output(max,min,Y)
+    x = convert_input(X)
+    index_flood = cross_validations_split(x,y,10)
+    NN_flood = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
+    for a,b in index_flood:
+        inTest = np.concatenate((x[:a],x[b+1:]))
+        outTest = np.concatenate((y[:a],y[b+1:]))
+        NN_flood.train(inTest, outTest, 1000, 0.1,0.5)
+        sum_avg_train += NN_flood.sum_all_err
+        sum_avg_predict += np.sum(NN_flood._mse(NN_flood.feedForward(x[a:b,:]),y[a:b,:]),axis=0)
+else:
+    A, B, inputSizeA, outputSizeB = Preprocessing_Cross()
+    index_cross = cross_validations_split(A,B,10)
+    NN_cross = NeuralNetwork(hiddenSize, inputSizeA, outputSizeB)
+    for a,b in index_cross:
+        inTest = np.concatenate((A[:a],A[b+1:]))
+        outTest = np.concatenate((B[:a],B[b+1:]))
+        NN_cross.train(inTest, outTest, 1000, 0.8,0.2)
+        sum_avg_train += NN_cross.sum_all_err
+        sum_avg_predict += np.sum(NN_cross._mse(NN_cross.feedForward(A[a:b,:]),B[a:b,:]),axis=0)
 
+print("Error average training : ",sum_avg_train/10)
+print("Error average testing : ",sum_avg_predict/10)  
 
-    #print(np.sum(NN._mse(NN.feedForward(A[a:b,:]),B[a:b,:]),axis=0)) 
-    sum_avg_predic += np.sum(NN._mse(NN.feedForward(A[a:b,:]),B[a:b,:]),axis=0)
-
-print("AAAAAAAAAAAAAAAAAAAAAA")
-print(sum_avg_train/10)
-print(sum_avg_predic/10)
