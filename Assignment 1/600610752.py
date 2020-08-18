@@ -15,9 +15,16 @@ class NeuralNetwork(object):
         # initiate weights
         weights = []
         for i in range(len(layers)-1):
-            w = np.random.rand(layers[i], layers[i+1])-1
+            w = np.random.rand(layers[i], layers[i+1])
             weights.append(w)
         self.weights = weights
+
+        # initiate bias
+        bias = []
+        for i in range(len(layers)-1):
+            b = np.random.rand(layers[i+1])
+            bias.append(b)
+        self.bias = bias
 
         # initiate activations
         activations = []
@@ -45,7 +52,8 @@ class NeuralNetwork(object):
             # calculate NN_input
             v = np.dot(activations, w)
             # calculate the activations
-            activations = self.sigmoid(v)
+            b = self.bias[i]
+            activations = self.sigmoid(v+b)
             self.activations[i+1] = activations
         return activations
 
@@ -57,6 +65,7 @@ class NeuralNetwork(object):
 
             # apply sigmoid derivative function
             delta = error * self.sigmoid(activations, deriv=True)
+            
 
             # reshape delta as to have it as a 2d array
             delta_re = delta.reshape(delta.shape[0], -1).T
@@ -70,6 +79,7 @@ class NeuralNetwork(object):
 
             # save derivative after applying matrix multiplication
             self.derivatives[i] = np.dot(current_activations, delta_re)
+            #print(self.derivatives[i].shape)
 
             # backpropogate the next error
             error = np.dot(delta, self.weights[i].T)
@@ -87,7 +97,7 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
-                #print(output, " - ", target)
+                print(output, " - ", target)
                 if i == 0 :
                     self.backPropagate(error)
                     self.derivatives_old = copy.deepcopy(self.derivatives)
@@ -111,9 +121,14 @@ class NeuralNetwork(object):
         # update the weights by stepping down the gradient
         for i in range(len(self.weights)):
             weights = self.weights[i]
+            bias = self.bias[i]
             derivatives = self.derivatives[i]
             derivatives_old  = self.derivatives_old[i]
-            weights += (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
+            delta = (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
+            weights += delta
+            delta = np.dot(delta.T,np.ones(delta.T.shape[1]))
+            bias += delta
+            
 
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
@@ -192,7 +207,8 @@ def cross_validations_split(dataset,output_dataset,folds):
 
 
 
-model = 'input'
+model = 'B'
+'''
 while(True):
     print(' -- Please press one to training --> A or B -- ')
     print(' -- A : flood_dataset , B : cross_dataset -- ')
@@ -203,11 +219,12 @@ while(True):
         sys.exit()
     elif model == 'A' or model == 'a' or model == 'B' or model == 'b' or  model == 'q' :
         break
-
+'''
 
 print("What Size of Hidden layer Neural Network ?")
 print(" -- Example : '4-2-2' --")
 print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
+'''
 hiddenSizeStr = input('Size of Hidden layer : ')
 learningRate = input('Learning Rate : ')
 learningRate = float(learningRate)
@@ -217,7 +234,11 @@ epochs = input('Epochs : ')
 epochs = int(epochs)
 hiddenSize = hiddenSizeStr.split("-")
 hiddenSize = list(map(int, hiddenSize))
-
+'''
+learningRate = 0.8
+momentumRate = 0.2
+epochs = 1000
+hiddenSize = [3,3]
 sum_avg_train = 0
 sum_avg_predict = 0
 
