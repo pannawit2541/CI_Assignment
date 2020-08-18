@@ -94,7 +94,7 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
-                #print(output, " - ", target)
+                print(output, " - ", target)
                 if i > 0 :
                     self.derivatives_old = copy.deepcopy(self.derivatives)
                 self.backPropagate(error)
