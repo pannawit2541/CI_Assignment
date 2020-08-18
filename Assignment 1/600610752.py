@@ -15,7 +15,7 @@ class NeuralNetwork(object):
         # initiate weights
         weights = []
         for i in range(len(layers)-1):
-            w = np.random.rand(layers[i], layers[i+1])+1
+            w = 2*np.random.rand(layers[i], layers[i+1])-1
             weights.append(w)
         self.weights = weights
 
@@ -97,10 +97,11 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
-                print(output, " - ", target)
+                #print(output, " - ", target)
                 if i == 0 :
                     self.backPropagate(error)
                     self.derivatives_old = copy.deepcopy(self.derivatives)
+                    print(self.derivatives_old[0]-self.derivatives[0])
                 else:
                     self.derivatives_old = copy.deepcopy(self.derivatives)
                     self.backPropagate(error)
@@ -124,7 +125,7 @@ class NeuralNetwork(object):
             bias = self.bias[i]
             derivatives = self.derivatives[i]
             derivatives_old  = self.derivatives_old[i]
-            delta = (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
+            delta = (derivatives * -learningRate) + ((derivatives-derivatives_old)*momentumRate)
             weights += delta
             delta = np.dot(delta.T,np.ones(delta.T.shape[1]))
             bias += delta
