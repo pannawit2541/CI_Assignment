@@ -15,7 +15,7 @@ class NeuralNetwork(object):
         # initiate weights
         weights = []
         for i in range(len(layers)-1):
-            w = np.random.rand(layers[i], layers[i+1])
+            w = np.random.rand(layers[i], layers[i+1])+1
             weights.append(w)
         self.weights = weights
 
@@ -238,7 +238,7 @@ hiddenSize = list(map(int, hiddenSize))
 learningRate = 0.8
 momentumRate = 0.2
 epochs = 1000
-hiddenSize = [3,3]
+hiddenSize = [3]
 sum_avg_train = 0
 sum_avg_predict = 0
 
@@ -252,7 +252,7 @@ if model == 'A' or model == 'a':
     for a,b in index_flood:
         inTest = np.concatenate((x[:a],x[b+1:]))
         outTest = np.concatenate((y[:a],y[b+1:]))
-        NN_flood.train(inTest, outTest, 1000, 0.1,0.5)
+        NN_flood.train(inTest, outTest, epochs , learningRate,momentumRate)
         sum_avg_train += NN_flood.sum_all_err
         sum_avg_predict += np.sum(NN_flood._mse(NN_flood.feedForward(x[a:b,:]),y[a:b,:]),axis=0)
 else:
@@ -262,10 +262,39 @@ else:
     for a,b in index_cross:
         inTest = np.concatenate((A[:a],A[b+1:]))
         outTest = np.concatenate((B[:a],B[b+1:]))
-        NN_cross.train(inTest, outTest, 1000, 0.8,0.2)
+        NN_cross.train(inTest, outTest, epochs , learningRate,momentumRate)
         sum_avg_train += NN_cross.sum_all_err
         sum_avg_predict += np.sum(NN_cross._mse(NN_cross.feedForward(A[a:b,:]),B[a:b,:]),axis=0)
 
-print("Error average training : ",sum_avg_train/10)
-print("Error average testing : ",sum_avg_predict/10)  
+predict = NN_cross.feedForward(A)
+label_data = []
+label_predict = []
+for i in range(A.shape[0]):
+    if predict[i][0] > predict[i][1]:
+        label_predict.append(0)
+    elif predict[i][0] <= predict[i][1]:
+        label_predict.append(1)
+    if B[i][0] > B[i][1]:
+        label_data.append(0)
+    elif B[i][0] <= B[i][1]:
+        label_data.append(1)
 
+a1 = 0
+a2 = 0
+b1 = 0
+b2 = 0
+for i in range(len(label_data)):
+    if label_data[i] == 0:
+        if label_predict[i] != label_data[i]:
+            a2 += 1
+        else:
+            a1 += 1
+    else:
+        if label_predict[i] != label_data[i]:
+            b1 += 1
+        else:
+            b2 += 1
+
+print("== 0  ==== 1")
+print("0 = ",a1," == ",a2)
+print("1 = ",b1," == ",b2)
