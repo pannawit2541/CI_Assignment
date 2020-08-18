@@ -141,7 +141,6 @@ def Preprocessing():
 
         input = np.array(input)
         output = np.array(output)
-        #print(output)
         inputSize = input.shape[1]
         outputSize = output.shape[1]
 
@@ -154,6 +153,7 @@ def Preprocessing_Cross():
         del content[0:3]
 
         # split data set
+        data = []
         output = []
         input = []
         for i,X in enumerate(content):
@@ -166,7 +166,6 @@ def Preprocessing_Cross():
                     input.append([float(a),float(b)])
         input = np.array(input)
         output = np.array(output)
-        #print(input)
         inputSize = input.shape[1]
         outputSize = output.shape[1]
 
@@ -199,7 +198,11 @@ print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
 #hiddenSizeStr = input('Size of Hidden layer : ')
 
 
+<<<<<<< HEAD:Assignment 1/_backup/Cross_Prediction.py
 hiddenSizeStr = '3'
+=======
+hiddenSizeStr = '4-5'
+>>>>>>> parent of 4e0568c... coding report:Assignment 1/test copy.py
 hiddenSize = hiddenSizeStr.split("-")
 hiddenSize = list(map(int, hiddenSize))
 #index = cross_validations_split(x,y,10)
@@ -221,3 +224,7 @@ for a,b in index:
     NN.train(inTest, outTest, 1000, 0.1,0.5)
     print(np.sum(NN._mse(NN.feedForward(A[a:b,:]),B[a:b,:]),axis=0)) 
 
+<<<<<<< HEAD:Assignment 1/_backup/Cross_Prediction.py
+=======
+
+>>>>>>> parent of 4e0568c... coding report:Assignment 1/test copy.py
