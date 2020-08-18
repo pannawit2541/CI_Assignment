@@ -15,7 +15,7 @@ class NeuralNetwork(object):
         # initiate weights
         weights = []
         for i in range(len(layers)-1):
-            w = 2*np.random.rand(layers[i], layers[i+1])-1
+            w = np.random.rand(layers[i], layers[i+1])
             weights.append(w)
         self.weights = weights
 
@@ -24,7 +24,7 @@ class NeuralNetwork(object):
         for i in range(len(layers)-1):
             b = np.random.rand(layers[i+1])
             bias.append(b)
-        self.bias = bias
+        self.bias = bias        
 
         # initiate activations
         activations = []
@@ -65,7 +65,6 @@ class NeuralNetwork(object):
 
             # apply sigmoid derivative function
             delta = error * self.sigmoid(activations, deriv=True)
-            
 
             # reshape delta as to have it as a 2d array
             delta_re = delta.reshape(delta.shape[0], -1).T
@@ -79,7 +78,6 @@ class NeuralNetwork(object):
 
             # save derivative after applying matrix multiplication
             self.derivatives[i] = np.dot(current_activations, delta_re)
-            #print(self.derivatives[i].shape)
 
             # backpropogate the next error
             error = np.dot(delta, self.weights[i].T)
@@ -88,7 +86,7 @@ class NeuralNetwork(object):
         # now enter the training loop
         for i in range(epochs):
             sum_errors = 0
-            
+
             # iterate through all the training data
             for j, input in enumerate(X):
                 target = Y[j]
@@ -98,20 +96,18 @@ class NeuralNetwork(object):
 
                 error = target - output
                 #print(output, " - ", target)
-                if i == 0 :
-                    self.backPropagate(error)
+                if i > 0 :
                     self.derivatives_old = copy.deepcopy(self.derivatives)
-                    print(self.derivatives_old[0]-self.derivatives[0])
-                else:
-                    self.derivatives_old = copy.deepcopy(self.derivatives)
-                    self.backPropagate(error)
+                self.backPropagate(error)
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
+                if i == 0:
+                    self.derivatives_old = copy.deepcopy(self.derivatives)
                 self.gradient_descent(learning_rate,momentumRate)
 
                 # keep track of the MSE for reporting later
                 sum_errors += self._mse(target, output)
-
+        
             # Epoch complete, report the training error
             print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
         self.sum_all_err = sum_errors/len(X)
@@ -125,14 +121,14 @@ class NeuralNetwork(object):
             bias = self.bias[i]
             derivatives = self.derivatives[i]
             derivatives_old  = self.derivatives_old[i]
-            delta = (derivatives * -learningRate) + ((derivatives-derivatives_old)*momentumRate)
+            delta = (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
             weights += delta
             delta = np.dot(delta.T,np.ones(delta.T.shape[1]))
             bias += delta
-            
 
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
+
 
 def convert_output(max,min,data,flag = False):
     if flag == True:

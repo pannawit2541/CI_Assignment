@@ -18,6 +18,13 @@ class NeuralNetwork(object):
             weights.append(w)
         self.weights = weights
 
+        # initiate bias
+        bias = []
+        for i in range(len(layers)-1):
+            b = np.random.rand(layers[i+1])
+            bias.append(b)
+        self.bias = bias        
+
         # initiate activations
         activations = []
         for i in range(len(layers)):
@@ -44,7 +51,8 @@ class NeuralNetwork(object):
             # calculate NN_input
             v = np.dot(activations, w)
             # calculate the activations
-            activations = self.sigmoid(v)
+            b = self.bias[i]
+            activations = self.sigmoid(v+b)
             self.activations[i+1] = activations
         return activations
 
@@ -92,6 +100,8 @@ class NeuralNetwork(object):
                 self.backPropagate(error)
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
+                if i == 0:
+                    self.derivatives_old = copy.deepcopy(self.derivatives)
                 self.gradient_descent(learning_rate,momentumRate)
 
                 # keep track of the MSE for reporting later
@@ -106,9 +116,13 @@ class NeuralNetwork(object):
         # update the weights by stepping down the gradient
         for i in range(len(self.weights)):
             weights = self.weights[i]
+            bias = self.bias[i]
             derivatives = self.derivatives[i]
             derivatives_old  = self.derivatives_old[i]
-            weights += (derivatives * learningRate) + (derivatives_old*momentumRate)
+            delta = (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
+            weights += delta
+            delta = np.dot(delta.T,np.ones(delta.T.shape[1]))
+            bias += delta
 
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
@@ -198,11 +212,9 @@ print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
 #hiddenSizeStr = input('Size of Hidden layer : ')
 
 
-<<<<<<< HEAD:Assignment 1/_backup/Cross_Prediction.py
+
 hiddenSizeStr = '3'
-=======
-hiddenSizeStr = '4-5'
->>>>>>> parent of 4e0568c... coding report:Assignment 1/test copy.py
+
 hiddenSize = hiddenSizeStr.split("-")
 hiddenSize = list(map(int, hiddenSize))
 #index = cross_validations_split(x,y,10)
@@ -221,10 +233,6 @@ for a,b in index:
 for a,b in index:
     inTest = np.concatenate((A[:a],A[b+1:]))
     outTest = np.concatenate((A[:a],B[b+1:]))
-    NN.train(inTest, outTest, 1000, 0.1,0.5)
-    print(np.sum(NN._mse(NN.feedForward(A[a:b,:]),B[a:b,:]),axis=0)) 
+    NN.train(inTest, outTest, 1000, 0.8,0.2)
+    print(np.sum(NN._mse(NN.feedForward(A[a:b+1,:]),B[a:b+1,:]),axis=0)) 
 
-<<<<<<< HEAD:Assignment 1/_backup/Cross_Prediction.py
-=======
-
->>>>>>> parent of 4e0568c... coding report:Assignment 1/test copy.py
