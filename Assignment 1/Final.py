@@ -19,6 +19,10 @@ class NeuralNetwork(object):
             weights.append(w)
         self.weights = weights
 
+        # initiate weights_t-1
+        self.weights_last  = copy.deepcopy(self.weights)
+
+
         # initiate bias
         bias = []
         for i in range(len(layers)-1):
@@ -82,10 +86,16 @@ class NeuralNetwork(object):
             # backpropogate the next error
             error = np.dot(delta, self.weights[i].T)
 
-    def train(self, X, Y, epochs, learning_rate,momentumRate):
+    def train(self, x, y, epochs, learning_rate,momentumRate):
         # now enter the training loop
         for i in range(epochs):
             sum_errors = 0
+
+            # Random data
+            data = np.concatenate([x,y] , axis=1)
+            np.random.shuffle(data)
+            Y = data[:,8:]
+            X = data[:,:8]
 
             # iterate through all the training data
             for j, input in enumerate(X):
@@ -96,13 +106,7 @@ class NeuralNetwork(object):
 
                 error = target - output
                 #print(output, " - ", target)
-                if i > 0 :
-                    self.backPropagate(error)
-                    self.derivatives_old = copy.deepcopy(self.derivatives)
-                else:
-                    self.derivatives_old = copy.deepcopy(self.derivatives)
-                    self.backPropagate(error)
-                    
+                self.backPropagate(error)
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
                     
@@ -113,7 +117,8 @@ class NeuralNetwork(object):
 
             # Epoch complete, report the training error
             print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
-        self.sum_all_err = sum_errors / len(X)
+
+
         print("Training complete! : ",sum_errors/len(X))
         print("=====")
 
@@ -121,11 +126,14 @@ class NeuralNetwork(object):
         # update the weights by stepping down the gradient
         for i in range(len(self.weights)):
             weights = self.weights[i]
-            bias = self.bias[i]
+            weights_last = self.weights_last[i]
             derivatives = self.derivatives[i]
-            derivatives_old  = self.derivatives_old[i]
-            delta = (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
-            weights += delta
+    
+            print(weights-weights_last)
+            weights += (derivatives * learningRate) + ((weights-weights_last)*momentumRate)
+            if np.all(weights-weights_last != 0):
+                weights_last = copy.deepcopy(weights)
+            
 
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
@@ -140,7 +148,7 @@ def convert_input(data):
     sd = data.std(axis = 0)
     return (data- mean)/ sd
 
-def Preprocessing():
+def Preprocessing_Flood():
 
         # import data set
         with open("Flood_dataset.txt", "r") as f:
@@ -155,13 +163,21 @@ def Preprocessing():
         # convert data to list 
         output = [list(map(int, X[8:])) for X in data]
         input = [list(map(int, X[:8])) for X in data]
+        data = [list(map(int, X[:9])) for X in data]
 
         input = np.array(input)
         output = np.array(output)
+        max,min = output.max(),output.min()
+
+        Y = convert_output(max,min,output)
+        X = convert_input(input)
+
+        #data = np.concatenate([X,Y] , axis=1)
+
         inputSize = input.shape[1]
         outputSize = output.shape[1]
 
-        return input, output, inputSize, outputSize
+        return X,Y,inputSize, outputSize
 
 def Preprocessing_Cross():
     # import data set
@@ -170,7 +186,6 @@ def Preprocessing_Cross():
         del content[0:3]
 
         # split data set
-        data = []
         output = []
         input = []
         for i,X in enumerate(content):
@@ -188,109 +203,25 @@ def Preprocessing_Cross():
 
         return input, output, inputSize, outputSize
   
-
-def cross_validations_split(dataset,output_dataset,folds):
-    fold_size = int(dataset.shape[0] * folds/100)
+def cross_validations_split(shape,folds):
+    fold_size = int(shape * folds/100)
     k = 0
     index = []
     for i in range(1,folds+1):
         if i < folds:
             index.append([k,i*fold_size])
         else:
-            index.append([k,dataset.shape[0]])
+            index.append([k,shape])
         k = i*fold_size
     return index
 
 
+X,Y,inputSize,outputSize = Preprocessing_Flood()
+hiddenSize = [4]
 
-#X, Y, inputSizeX, outputSizeY = Preprocessing()
-A, B, inputSizeA, outputSizeB = Preprocessing_Cross()
-class_0 = 0
-class_1 = 0
+NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
 
-for i in range(B.shape[0]):
-    print( B[i][0])
-    if B[i][0] == 1:
-        class_0 +=1
-    else:
-        class_1 +=1
-
-print(class_0)
-print(class_1)
-#max,min = Y.max(),Y.min()
-#y = convert_output(max,min,Y)
-#x = convert_input(X)
-
-print("What Size of Hidden layer Neural Network ?")
-print(" -- Example : '4-2-2' --")
-print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
-#hiddenSizeStr = input('Size of Hidden layer : ')
-
-
-
-hiddenSizeStr = '9'
-
-hiddenSize = hiddenSizeStr.split("-")
-hiddenSize = list(map(int, hiddenSize))
-#index = cross_validations_split(x,y,10)
-index_cross = cross_validations_split(A,B,10)
-#NN = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
-NN_cross = NeuralNetwork(hiddenSize, inputSizeA, outputSizeB)
-
-"""
-for a,b in index:
-    inTest = np.concatenate((x:a],x[b+1:]))
-    outTest = np.concatenate((y[:a],y[b+1:]))
-    NN.train(inTest, outTest, 1000, 0.1,0.5)
-    print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
- 
-"""
-
-sum_avg_train = 0
-sum_avg_predict = 0
-start_time = time.time()
-for a,b in index_cross:
-    inTest = np.concatenate((A[:a],A[b+1:]))
-    outTest = np.concatenate((B[:a],B[b+1:]))
-    NN_cross.train(inTest, outTest, 1 , 0.8  ,0.2)
-    sum_avg_train += NN_cross.sum_all_err
-    sum_avg_predict += np.sum(NN_cross._mse(NN_cross.feedForward(A[a:b,:]),B[a:b,:]),axis=0)
-
-print("--- %s seconds ---" % (time.time() - start_time))
-
-
-print(sum_avg_train/10)
-print(sum_avg_predict/10)
-predict = NN_cross.feedForward(A)
-label_data = []
-label_predict = []
-for i in range(A.shape[0]):
-    if predict[i][0] > predict[i][1]:
-        label_predict.append(0)
-    elif predict[i][0] <= predict[i][1]:
-        label_predict.append(1)
-    if B[i][0] > B[i][1]:
-        label_data.append(0)
-    elif B[i][0] <= B[i][1]:
-        label_data.append(1)
-
-a1 = 0
-a2 = 0
-b1 = 0
-b2 = 0
-for i in range(len(label_data)):
-    if label_data[i] == 0:
-        if label_predict[i] != label_data[i]:
-            a2 += 1
-        else:
-            a1 += 1
-    else:
-        if label_predict[i] != label_data[i]:
-            b1 += 1
-        else:
-            b2 += 1
-
-print("== 0  ==== 1")
-print("0 = ",a1," == ",a2)
-print("1 = ",b1," == ",b2)
-
+for a,b in cross_validations_split(X.shape[0],10):
+    inTest = np.concatenate((X[:a],X[b+1:]))
+    outTest = np.concatenate((Y[:a],Y[b+1:]))
+    NN.train(inTest, outTest, 1 , 0.7  ,0.5)
