@@ -29,6 +29,10 @@ class NeuralNetwork(object):
             bias.append(b)
         self.bias = bias        
 
+        # initiate bias_t-1
+        self.bias_last  = np.copy(self.bias)
+
+
         # initiate activations
         activations = []
         for i in range(len(layers)):
@@ -36,11 +40,16 @@ class NeuralNetwork(object):
             activations.append(a)
         self.activations = activations
 
+        # initiate gradient_w
         derivatives = []
         for i in range(len(layers) - 1):
             d = np.zeros((layers[i], layers[i + 1]))
             derivatives.append(d)
-        self.derivatives = derivatives
+        self.derivatives_w = derivatives
+
+        # initiate gradient_b
+        self.derivatives_b = np.copy(self.derivatives_w)
+
 
     def sigmoid(self, s, deriv=False):
         if (deriv == True):
@@ -60,7 +69,7 @@ class NeuralNetwork(object):
         return activations
 
     def backPropagate(self, error):
-        for i in reversed(range(len(self.derivatives))):
+        for i in reversed(range(len(self.derivatives_w))):
 
             # get activation for previous layer
             activations = self.activations[i+1]
@@ -78,8 +87,15 @@ class NeuralNetwork(object):
             current_activations = current_activations.reshape(
                 current_activations.shape[0], -1)
 
+            # create matrix one of bias
+            delta_bias = np.ones(activations.shape)
+            #print("---------")
+            #print(activations.shape)
+            #print(delta_re.shape)
+
             # save derivative after applying matrix multiplication
-            self.derivatives[i] = np.dot(current_activations, delta_re)
+            self.derivatives_w[i] = np.dot(current_activations, delta_re)
+            self.derivatives_b[i] = np.dot(delta_re,delta_bias)
 
             # backpropogate the next error
             error = np.dot(delta, self.weights[i].T)
@@ -116,6 +132,7 @@ class NeuralNetwork(object):
             #if np.all(np.subtract(self.weights,self.weights_last) != 0):
             if flag :
                 self.weights_last = np.copy(self.weights)
+                self.bias_last = np.copy(self.bias)
             flag = True
             #else:
             #    print("A")
@@ -129,12 +146,25 @@ class NeuralNetwork(object):
     def gradient_descent(self, learningRate=1,momentumRate=1):
         # update the weights by stepping down the gradient
         for i in range(len(self.weights)):
+
             weights = self.weights[i]
             weights_last = self.weights_last[i]
-            derivatives = self.derivatives[i]
-            #print(weights-weights_last)
-            weights += (derivatives * learningRate) + ((weights-weights_last)*momentumRate)
 
+            bias = self.bias[i]
+            bias_last = self.bias_last[i]
+
+            derivatives_w = self.derivatives_w[i]
+            derivatives_b = self.derivatives_b[i]
+
+            
+            #print(weights-weights_last)
+            weights += (derivatives_w * learningRate) + ((weights-weights_last)*momentumRate)
+            #print("---")
+            #print(bias.shape)
+            #print(derivatives_b.shape)
+            #print(bias_last.shape)
+            bias += (derivatives_b * learningRate) + ((bias-bias_last)*momentumRate)
+            
             
 
     def _mse(self, target, output):
