@@ -1,5 +1,4 @@
 import numpy as np
-import copy
 import time
 
 
@@ -20,7 +19,7 @@ class NeuralNetwork(object):
         self.weights = weights
 
         # initiate weights_t-1
-        self.weights_last  = copy.deepcopy(self.weights)
+        self.weights_last  = np.copy(self.weights)
 
 
         # initiate bias
@@ -42,7 +41,6 @@ class NeuralNetwork(object):
             d = np.zeros((layers[i], layers[i + 1]))
             derivatives.append(d)
         self.derivatives = derivatives
-        self.derivatives_old = copy.deepcopy(self.derivatives)
 
     def sigmoid(self, s, deriv=False):
         if (deriv == True):
@@ -88,6 +86,7 @@ class NeuralNetwork(object):
 
     def train(self, x, y, epochs, learning_rate,momentumRate):
         # now enter the training loop
+        flag = False
         for i in range(epochs):
             sum_errors = 0
 
@@ -111,10 +110,15 @@ class NeuralNetwork(object):
                 # (this will update the weights
                     
                 self.gradient_descent(learning_rate,momentumRate)
-
+                
                 # keep track of the MSE for reporting later
                 sum_errors += self._mse(target, output)
-
+            #if np.all(np.subtract(self.weights,self.weights_last) != 0):
+            if flag :
+                self.weights_last = np.copy(self.weights)
+            flag = True
+            #else:
+            #    print("A")
             # Epoch complete, report the training error
             print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
 
@@ -128,11 +132,9 @@ class NeuralNetwork(object):
             weights = self.weights[i]
             weights_last = self.weights_last[i]
             derivatives = self.derivatives[i]
-    
-            print(weights-weights_last)
+            #print(weights-weights_last)
             weights += (derivatives * learningRate) + ((weights-weights_last)*momentumRate)
-            if np.all(weights-weights_last != 0):
-                weights_last = copy.deepcopy(weights)
+
             
 
     def _mse(self, target, output):
@@ -219,9 +221,10 @@ def cross_validations_split(shape,folds):
 X,Y,inputSize,outputSize = Preprocessing_Flood()
 hiddenSize = [4]
 
+
 NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
 
 for a,b in cross_validations_split(X.shape[0],10):
     inTest = np.concatenate((X[:a],X[b+1:]))
     outTest = np.concatenate((Y[:a],Y[b+1:]))
-    NN.train(inTest, outTest, 1 , 0.7  ,0.5)
+    NN.train(inTest, outTest, 1000 , 0.7  ,0.5)
