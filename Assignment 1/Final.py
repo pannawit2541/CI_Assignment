@@ -19,6 +19,7 @@ class NeuralNetwork(object):
         self.weights = weights
 
         # initiate weights_t-1
+        self.flag = False
         self.weights_last  = np.copy(self.weights)
 
 
@@ -50,6 +51,8 @@ class NeuralNetwork(object):
         # initiate gradient_b
         self.derivatives_b = np.copy(self.derivatives_w)
 
+        # initiate average_err
+        self.average_err = 0
 
     def sigmoid(self, s, deriv=False):
         if (deriv == True):
@@ -102,7 +105,6 @@ class NeuralNetwork(object):
 
     def train(self, x, y, epochs, learning_rate,momentumRate):
         # now enter the training loop
-        flag = False
         for i in range(epochs):
             sum_errors = 0
 
@@ -130,15 +132,14 @@ class NeuralNetwork(object):
                 # keep track of the MSE for reporting later
                 sum_errors += self._mse(target, output)
             #if np.all(np.subtract(self.weights,self.weights_last) != 0):
-            if flag :
+            if self.flag :
                 self.weights_last = np.copy(self.weights)
                 self.bias_last = np.copy(self.bias)
-            flag = True
-            #else:
-            #    print("A")
+            self.flag = True
             # Epoch complete, report the training error
             print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
 
+        self.average_err = round(sum_errors / len(X) , 5)
 
         print("Training complete! : ",sum_errors/len(X))
         print("=====")
@@ -249,7 +250,7 @@ def cross_validations_split(shape,folds):
 
 
 X,Y,inputSize,outputSize = Preprocessing_Flood()
-hiddenSize = [4]
+hiddenSize = [4,4,4]
 
 
 NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
