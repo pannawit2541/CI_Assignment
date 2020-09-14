@@ -57,7 +57,7 @@ class NeuralNetwork(object):
             v = np.dot(activations, w)
             # calculate the activations
             b = self.bias[i]
-            activations = self.sigmoid(v)
+            activations = self.sigmoid(v+b)
             self.activations[i+1] = activations
         return activations
 
@@ -99,10 +99,18 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
+<<<<<<< HEAD
 
+=======
+                print(output, " - ", target)
+                if i > 0 :
+                    self.derivatives_old = copy.deepcopy(self.derivatives)
+                self.backPropagate(error)
+>>>>>>> parent of abe8268... fix bug
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
-                    
+                if i == 0:
+                    self.derivatives_old = copy.deepcopy(self.derivatives)
                 self.gradient_descent(learning_rate,momentumRate)
                 if self.flag :
                     self.weights_last = np.copy(self.weights)
@@ -111,8 +119,12 @@ class NeuralNetwork(object):
                 sum_errors += self._mse(target, output)
 
             # Epoch complete, report the training error
+<<<<<<< HEAD
            #print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
         self.sum_all_err = sum_errors / len(X)
+=======
+            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
+>>>>>>> parent of abe8268... fix bug
         print("Training complete! : ",sum_errors/len(X))
         print("=====")
 
@@ -120,11 +132,21 @@ class NeuralNetwork(object):
         # update the weights by stepping down the gradient
         for i in range(len(self.weights)):
             weights = self.weights[i]
+<<<<<<< HEAD
             weights_last = self.weights_last[i]
 
             derivatives_w = self.derivatives[i]
             print(weights-weights_last)
             weights += (derivatives_w * learningRate) + ((weights-weights_last)*momentumRate)
+=======
+            bias = self.bias[i]
+            derivatives = self.derivatives[i]
+            derivatives_old  = self.derivatives_old[i]
+            delta = (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
+            weights += delta
+            delta = np.dot(delta.T,np.ones(delta.T.shape[1]))
+            bias += delta
+>>>>>>> parent of abe8268... fix bug
 
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
@@ -204,6 +226,7 @@ def cross_validations_split(dataset,output_dataset,folds):
 
 #X, Y, inputSizeX, outputSizeY = Preprocessing()
 A, B, inputSizeA, outputSizeB = Preprocessing_Cross()
+<<<<<<< HEAD
 class_0 = 0
 class_1 = 0
 
@@ -215,6 +238,8 @@ for i in range(B.shape[0]):
         class_1 +=1
 
 
+=======
+>>>>>>> parent of abe8268... fix bug
 #max,min = Y.max(),Y.min()
 #y = convert_output(max,min,Y)
 #x = convert_input(X)
@@ -226,14 +251,18 @@ print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
 
 
 
+<<<<<<< HEAD
 hiddenSizeStr = '9'
+=======
+hiddenSizeStr = '3'
+>>>>>>> parent of abe8268... fix bug
 
 hiddenSize = hiddenSizeStr.split("-")
 hiddenSize = list(map(int, hiddenSize))
 #index = cross_validations_split(x,y,10)
-index_cross = cross_validations_split(A,B,10)
+index = cross_validations_split(A,B,10)
 #NN = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
-NN_cross = NeuralNetwork(hiddenSize, inputSizeA, outputSizeB)
+NN = NeuralNetwork(hiddenSize, inputSizeA, outputSizeB)
 
 """
 for a,b in index:
@@ -243,6 +272,7 @@ for a,b in index:
     print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
  
 """
+<<<<<<< HEAD
 
 sum_avg_train = 0
 sum_avg_predict = 0
@@ -292,3 +322,11 @@ print("== 0  ==== 1")
 print("0 = ",a1," == ",a2)
 print("1 = ",b1," == ",b2)
 
+=======
+for a,b in index:
+    inTest = np.concatenate((A[:a],A[b+1:]))
+    outTest = np.concatenate((A[:a],B[b+1:]))
+    NN.train(inTest, outTest, 1000, 0.8,0.2)
+    print(np.sum(NN._mse(NN.feedForward(A[a:b+1,:]),B[a:b+1,:]),axis=0)) 
+
+>>>>>>> parent of abe8268... fix bug

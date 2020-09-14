@@ -97,15 +97,12 @@ class NeuralNetwork(object):
                 error = target - output
                 print(output, " - ", target)
                 if i > 0 :
-                    self.backPropagate(error)
                     self.derivatives_old = copy.deepcopy(self.derivatives)
-                else:
-                    self.derivatives_old = copy.deepcopy(self.derivatives)
-                    self.backPropagate(error)
-                    
+                self.backPropagate(error)
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
-                    
+                if i == 0:
+                    self.derivatives_old = copy.deepcopy(self.derivatives)
                 self.gradient_descent(learning_rate,momentumRate)
 
                 # keep track of the MSE for reporting later
@@ -113,7 +110,7 @@ class NeuralNetwork(object):
         
             # Epoch complete, report the training error
             print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
-        self.sum_all_err = sum_errors / len(X)
+        self.sum_all_err = sum_errors/len(X)
         print("Training complete! : ",sum_errors/len(X))
         print("=====")
 
@@ -186,9 +183,8 @@ def Preprocessing_Cross():
                     input.append([float(a),float(b)])
         input = np.array(input)
         output = np.array(output)
-        
+        #print(input)
         inputSize = input.shape[1]
-        print(input.shape)
         outputSize = output.shape[1]
 
         return input, output, inputSize, outputSize
@@ -206,41 +202,10 @@ def cross_validations_split(dataset,output_dataset,folds):
         k = i*fold_size
     return index
 
-def confusion_matrix(act,predict):
-    label_data = []
-    label_predict = []
-    for i in range(act.shape[0]):
-        if predict[i][0] > predict[i][1]:
-            label_predict.append(0)
-        elif predict[i][0] <= predict[i][1]:
-            label_predict.append(1)
-        if act[i][0] > act[i][1]:
-            label_data.append(0)
-        elif act[i][0] <= act[i][1]:
-            label_data.append(1)
 
-    a1 = 0
-    a2 = 0
-    b1 = 0
-    b2 = 0
-    for i in range(len(label_data)):
-        if label_data[i] == 0:
-            if label_predict[i] != label_data[i]:
-                a2 += 1
-            else:
-                a1 += 1
-        else:
-            if label_predict[i] != label_data[i]:
-                b1 += 1
-            else:
-                b2 += 1
 
-    print("== 0  ==== 1")
-    print("0 = ",a1," == ",a2)
-    print("1 = ",b1," == ",b2)
-
-model = 'choose model'
-
+model = 'B'
+'''
 while(True):
     print(' -- Please press one to training --> A or B -- ')
     print(' -- A : flood_dataset , B : cross_dataset -- ')
@@ -251,12 +216,12 @@ while(True):
         sys.exit()
     elif model == 'A' or model == 'a' or model == 'B' or model == 'b' or  model == 'q' :
         break
-
+'''
 
 print("What Size of Hidden layer Neural Network ?")
 print(" -- Example : '4-2-2' --")
 print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
-
+'''
 hiddenSizeStr = input('Size of Hidden layer : ')
 learningRate = input('Learning Rate : ')
 learningRate = float(learningRate)
@@ -266,7 +231,13 @@ epochs = input('Epochs : ')
 epochs = int(epochs)
 hiddenSize = hiddenSizeStr.split("-")
 hiddenSize = list(map(int, hiddenSize))
-
+'''
+learningRate = 0.8
+momentumRate = 0.2
+epochs = 1000
+hiddenSize = [3,3]
+sum_avg_train = 0
+sum_avg_predict = 0
 
 if model == 'A' or model == 'a':
     X, Y, inputSizeX, outputSizeY = Preprocessing()
@@ -278,7 +249,7 @@ if model == 'A' or model == 'a':
     for a,b in index_flood:
         inTest = np.concatenate((x[:a],x[b+1:]))
         outTest = np.concatenate((y[:a],y[b+1:]))
-        NN_flood.train(inTest, outTest, epochs , learningRate,momentumRate)
+        NN_flood.train(inTest, outTest, 1000, 0.1,0.5)
         sum_avg_train += NN_flood.sum_all_err
         sum_avg_predict += np.sum(NN_flood._mse(NN_flood.feedForward(x[a:b,:]),y[a:b,:]),axis=0)
 else:
@@ -288,11 +259,10 @@ else:
     for a,b in index_cross:
         inTest = np.concatenate((A[:a],A[b+1:]))
         outTest = np.concatenate((B[:a],B[b+1:]))
-        NN_cross.train(inTest, outTest, epochs , learningRate,momentumRate)
+        NN_cross.train(inTest, outTest, 1000, 0.8,0.2)
         sum_avg_train += NN_cross.sum_all_err
         sum_avg_predict += np.sum(NN_cross._mse(NN_cross.feedForward(A[a:b,:]),B[a:b,:]),axis=0)
-    confusion_matrix(B,NN_cross.feedForward(A))
-    
 
-print(sum_avg_train/10)
-print(sum_avg_predict/10)
+print("Error average training : ",sum_avg_train/10)
+print("Error average testing : ",sum_avg_predict/10)  
+
