@@ -19,6 +19,10 @@ class NeuralNetwork(object):
             weights.append(w)
         self.weights = weights
 
+        # initiate weights_t-1
+        self.flag = False
+        self.weights_last  = np.copy(self.weights)
+
         # initiate bias
         bias = []
         for i in range(len(layers)-1):
@@ -95,24 +99,19 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
-                #print(output, " - ", target)
-                if i > 0 :
-                    self.backPropagate(error)
-                    self.derivatives_old = copy.deepcopy(self.derivatives)
-                else:
-                    self.derivatives_old = copy.deepcopy(self.derivatives)
-                    self.backPropagate(error)
-                    
+
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
                     
                 self.gradient_descent(learning_rate,momentumRate)
-
+                if self.flag :
+                    self.weights_last = np.copy(self.weights)
+                self.flag = True
                 # keep track of the MSE for reporting later
                 sum_errors += self._mse(target, output)
 
             # Epoch complete, report the training error
-            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
+           #print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
         self.sum_all_err = sum_errors / len(X)
         print("Training complete! : ",sum_errors/len(X))
         print("=====")
@@ -121,11 +120,11 @@ class NeuralNetwork(object):
         # update the weights by stepping down the gradient
         for i in range(len(self.weights)):
             weights = self.weights[i]
-            bias = self.bias[i]
-            derivatives = self.derivatives[i]
-            derivatives_old  = self.derivatives_old[i]
-            delta = (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
-            weights += delta
+            weights_last = self.weights_last[i]
+
+            derivatives_w = self.derivatives[i]
+            print(weights-weights_last)
+            weights += (derivatives_w * learningRate) + ((weights-weights_last)*momentumRate)
 
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
@@ -215,8 +214,7 @@ for i in range(B.shape[0]):
     else:
         class_1 +=1
 
-print(class_0)
-print(class_1)
+
 #max,min = Y.max(),Y.min()
 #y = convert_output(max,min,Y)
 #x = convert_input(X)
@@ -252,7 +250,7 @@ start_time = time.time()
 for a,b in index_cross:
     inTest = np.concatenate((A[:a],A[b+1:]))
     outTest = np.concatenate((B[:a],B[b+1:]))
-    NN_cross.train(inTest, outTest, 1 , 0.8  ,0.2)
+    NN_cross.train(inTest, outTest, 2 , 0.8  ,0.2)
     sum_avg_train += NN_cross.sum_all_err
     sum_avg_predict += np.sum(NN_cross._mse(NN_cross.feedForward(A[a:b,:]),B[a:b,:]),axis=0)
 
