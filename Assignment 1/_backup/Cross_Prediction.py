@@ -119,12 +119,8 @@ class NeuralNetwork(object):
                 sum_errors += self._mse(target, output)
 
             # Epoch complete, report the training error
-<<<<<<< HEAD
            #print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
         self.sum_all_err = sum_errors / len(X)
-=======
-            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
->>>>>>> parent of abe8268... fix bug
         print("Training complete! : ",sum_errors/len(X))
         print("=====")
 
@@ -132,21 +128,11 @@ class NeuralNetwork(object):
         # update the weights by stepping down the gradient
         for i in range(len(self.weights)):
             weights = self.weights[i]
-<<<<<<< HEAD
             weights_last = self.weights_last[i]
 
             derivatives_w = self.derivatives[i]
             print(weights-weights_last)
             weights += (derivatives_w * learningRate) + ((weights-weights_last)*momentumRate)
-=======
-            bias = self.bias[i]
-            derivatives = self.derivatives[i]
-            derivatives_old  = self.derivatives_old[i]
-            delta = (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
-            weights += delta
-            delta = np.dot(delta.T,np.ones(delta.T.shape[1]))
-            bias += delta
->>>>>>> parent of abe8268... fix bug
 
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
@@ -272,7 +258,6 @@ for a,b in index:
     print(np.sum(NN._mse(NN.feedForward(x[a:b,:]),y[a:b,:]),axis=0)) 
  
 """
-<<<<<<< HEAD
 
 sum_avg_train = 0
 sum_avg_predict = 0
@@ -322,11 +307,3 @@ print("== 0  ==== 1")
 print("0 = ",a1," == ",a2)
 print("1 = ",b1," == ",b2)
 
-=======
-for a,b in index:
-    inTest = np.concatenate((A[:a],A[b+1:]))
-    outTest = np.concatenate((A[:a],B[b+1:]))
-    NN.train(inTest, outTest, 1000, 0.8,0.2)
-    print(np.sum(NN._mse(NN.feedForward(A[a:b+1,:]),B[a:b+1,:]),axis=0)) 
-
->>>>>>> parent of abe8268... fix bug

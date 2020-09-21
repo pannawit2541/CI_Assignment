@@ -1,7 +1,10 @@
 import numpy as np
+from random import randint
 import time
 import copy 
 
+import xlwt 
+from xlwt import Workbook 
 
 class NeuralNetwork(object):
     def __init__(self, hiddenSize, inputSize, outputSize):
@@ -15,7 +18,7 @@ class NeuralNetwork(object):
         # initiate weights
         weights = []
         for i in range(len(layers)-1):
-            w = np.random.rand(layers[i], layers[i+1])
+            w = -5*np.random.rand(layers[i], layers[i+1])+1
             weights.append(w)
         self.weights = weights
 
@@ -106,17 +109,20 @@ class NeuralNetwork(object):
             # backpropogate the next error
             error = np.dot(delta, self.weights[i].T)
 
-    def train(self, x, y, epochs, learning_rate,momentumRate):
+    def train(self, X, Y, epochs, learning_rate,momentumRate):
         # now enter the training loop
         for i in range(epochs):
             sum_errors = 0
-
+       
             # Random data
-            data = np.concatenate([x,y] , axis=1)
-            np.random.shuffle(data)
-            Y = data[:,8:]
-            X = data[:,:8]
+            seed = randint(1, epochs*100)
 
+            np.random.seed(seed)
+            np.random.shuffle(X)
+
+            np.random.seed(seed)
+            np.random.shuffle(Y)
+           
             # iterate through all the training data
             for j, input in enumerate(X):
                 target = Y[j]
@@ -175,27 +181,21 @@ class NeuralNetwork(object):
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
 
-def convert_output(NewMax,NewMin,OldMax,OldMin,OldValue,flag = "convert"):
+def _normalization(NewMax,NewMin,OldMax,OldMin,OldValue):
+
     OldRange = (OldMax - OldMin)  
     NewRange = (NewMax - NewMin)  
     NewValue = (((OldValue - OldMin) * NewRange) / OldRange) + NewMin
         
-    if flag == "convert":
-        NewValue = 
-    elif flag == "revert":
-        NewValue = (OldValue - NewMin) * OldRange / ((OldValue - OldMin) * NewRange)
-    else :
-        print(" flag must only 'convert' or 'revert' ")
     return  NewValue
 
-def convert_input(data):
-    mean = data.mean(axis = 0)
-    sd = data.std(axis = 0)
-    return (data- mean)/ sd
+def _readfile(txt):
 
-def Preprocessing_Flood():
+    output = []
+    input = []
 
-        # import data set
+    if txt == "Flood_dataset.txt":
+                # import data set
         with open("Flood_dataset.txt", "r") as f:
             content = f.readlines()
         del content[0:3]
@@ -208,31 +208,14 @@ def Preprocessing_Flood():
         # convert data to list 
         output = [list(map(int, X[8:])) for X in data]
         input = [list(map(int, X[:8])) for X in data]
-        data = [list(map(int, X[:9])) for X in data]
 
-        input = np.array(input)
-        output = np.array(output)
-        max,min = output.max(),output.min()
 
-        Y = convert_output(1,0,max,min,output,flag = "convert")
-        X = convert_input(input)
 
-        #data = np.concatenate([X,Y] , axis=1)
-
-        inputSize = input.shape[1]
-        outputSize = output.shape[1]
-
-        return X,Y,inputSize, outputSize
-
-def Preprocessing_Cross():
-    # import data set
+    elif txt == "cross.pat":
+        # import data set
         with open("cross.pat", "r") as f:
             content = f.readlines()
-        del content[0:3]
 
-        # split data set
-        output = []
-        input = []
         for i,X in enumerate(content):
             if X[0] != 'p':
                 if (i+1)%3 == 0:
@@ -241,15 +224,29 @@ def Preprocessing_Cross():
                 else:
                     a,b = X.split()
                     input.append([float(a),float(b)])
-        input = np.array(input)
-        output = np.array(output)
-        inputSize = input.shape[1]
-        outputSize = output.shape[1]
+            
+    else:
+        print("-- Not found a data / Missing data --")
 
-        #Y = convert_output()
+    # Convert to np_array
 
-        return input, output, inputSize, outputSize
-  
+    input = np.array(input)
+    output = np.array(output)
+
+    seed = randint(1, len(input)*100)
+
+    np.random.seed(seed)
+    np.random.shuffle(input)
+
+    np.random.seed(seed)
+    np.random.shuffle(output)
+    # Shape input and output
+
+    inputSize = input.shape[1]
+    outputSize = output.shape[1]
+
+    return input, output, inputSize, outputSize
+
 def cross_validations_split(shape,folds):
     fold_size = int(shape * folds/100)
     k = 0
@@ -262,17 +259,80 @@ def cross_validations_split(shape,folds):
         k = i*fold_size
     return index
 
+def _confusion_matrix(predict,actually):
 
-X,Y,inputSize,outputSize = Preprocessing_Flood()
-hiddenSize = [2]
-print(Y)
-print(convert_output())
+    def _create_matrix(label,act):
+
+        matrix = np.array([[0, 0], [0, 0]])
+
+        if act[0] == 0 :
+            if label[0] == 0 :
+                matrix[0][0] += 1
+            else :
+                matrix[0][1] += 1
+        else :
+            if label[0] == 1 :
+                matrix[1][1] += 1
+            else :
+                matrix[1][0] += 1
+        
+        return matrix
+
+    confusion_matrix = np.array([[0, 0], [0, 0]])
+
+    for i in range(len(predict)):
+        print(predict[i] , actually[i])
+        if predict[i][0] >= predict[i][1]:
+            label = [1,0]
+        else :
+            label = [0,1]
+        matrix = _create_matrix(label,actually[i])
+        confusion_matrix = np.add(confusion_matrix,matrix)
+    
+    print(confusion_matrix)
+
+    return confusion_matrix
+
+
+X,Y,inputSize,outputSize = _readfile("cross.pat")
+
+#X_train = _normalization(1,0,X.max(),X.min(),X)
+X_train = X
+Y_train = _normalization(0.9,0.1,Y.max(),Y.min(),Y)
+
+hiddenSize = [6]
 
 NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
 
-'''
-for a,b in cross_validations_split(X.shape[0],10):
-    inTest = np.concatenate((X[:a],X[b+1:]))
-    outTest = np.concatenate((Y[:a],Y[b+1:]))
-    NN.train(inTest, outTest, 1000 , 0.7  ,0.5)
-'''
+train_average_accuracy = 0
+test_average_accuracy = 0
+
+for a,b in cross_validations_split(X_train.shape[0],10):
+
+    inTest = np.concatenate((X_train[:a],X_train[b+1:]))
+    outTest = np.concatenate((Y_train[:a],Y_train[b+1:]))
+    NN.train(inTest, outTest, 1000 , 0.1  ,0.8)
+    train_average_accuracy += (1 - NN.average_err)/10
+    test_average_accuracy += (1- np.sum(NN._mse(NN.feedForward(X_train[a:b,:]),Y_train[a:b,:]),axis=0))/10
+
+
+Y_predict = NN.feedForward(X_train)
+matrix = _confusion_matrix(Y_predict,Y)
+matrix = np.float64(matrix)
+
+
+wb = Workbook() 
+sheet1 = wb.add_sheet('Sheet 1')
+
+sheet1.write(2, 2, "train_average_accuracy") 
+sheet1.write(3, 2, train_average_accuracy*100)
+sheet1.write(2, 3, "test_average_accuracy")
+sheet1.write(3, 3, test_average_accuracy*100)
+sheet1.write(2, 4, "test_average_accuracy")
+sheet1.write(3, 4, matrix[0][0])
+sheet1.write(3, 5, matrix[0][1])
+sheet1.write(4, 4, matrix[1][0])
+sheet1.write(4, 5, matrix[1][1])
+
+
+wb.save('plot.xls') 
