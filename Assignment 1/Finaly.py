@@ -15,7 +15,7 @@ class NeuralNetwork(object):
         # initiate weights
         weights = []
         for i in range(len(layers)-1):
-            w = -5*np.random.rand(layers[i], layers[i+1])+1
+            w = np.random.rand(layers[i], layers[i+1])
             weights.append(w)
         self.weights = weights
 

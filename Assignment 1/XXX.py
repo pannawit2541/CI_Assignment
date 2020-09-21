@@ -2,10 +2,10 @@ import numpy as np
 from random import randint
 import time
 import copy 
-
+'''
 import xlwt 
 from xlwt import Workbook 
-
+'''
 class NeuralNetwork(object):
     def __init__(self, hiddenSize, inputSize, outputSize):
         # initiate layers
@@ -142,7 +142,7 @@ class NeuralNetwork(object):
                 sum_errors += self._mse(target, output)
           
             # Epoch complete, report the training error
-            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
+            #print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
 
         self.average_err = round(sum_errors / len(X) , 5)
 
@@ -291,16 +291,17 @@ def _confusion_matrix(predict,actually):
     print(confusion_matrix)
 
 
-X,Y,inputSize,outputSize = _readfile("cross.pat")
+X,Y,inputSize,outputSize = _readfile("Flood_dataset.txt")
 
-#X_train = _normalization(1,0,X.max(),X.min(),X)
-X_train = X
+X_train = _normalization(1,0,X.max(),X.min(),X)
+#X_train = X
 Y_train = _normalization(0.9,0.1,Y.max(),Y.min(),Y)
 
-hiddenSize = [2]
+hiddenSize = [4]
 
 NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
-
+print(NN.weights)
+print("====================")
 train_average_accuracy = 0
 test_average_accuracy = 0
 
@@ -312,11 +313,13 @@ for a,b in cross_validations_split(X_train.shape[0],10):
     train_average_accuracy += (1 - NN.average_err)/10
     test_average_accuracy += (1- np.sum(NN._mse(NN.feedForward(X_train[a:b,:]),Y_train[a:b,:]),axis=0))/10
 
+print(NN.weights)
 
 Y_predict = NN.feedForward(X_train)
-_confusion_matrix(Y_predict,Y)
 
+#_confusion_matrix(Y_predict,Y)
 
+'''
 wb = Workbook() 
 sheet1 = wb.add_sheet('Sheet 1')
 
@@ -324,13 +327,13 @@ sheet1.write(2, 2, "train_average_accuracy")
 sheet1.write(3, 2, train_average_accuracy*100)
 sheet1.write(2, 3, "test_average_accuracy")
 sheet1.write(3, 3, test_average_accuracy*100)
-
+'''
 
 
 
 Y_predict = NN.feedForward(X_train)
 Y_predict = _normalization(Y.max(),Y.min(),Y_predict.max(),Y_predict.min(),Y_predict)
-
+'''
 print(Y_predict.shape)
 #print(Y.shape)
 Y_predict = np.float64(Y_predict)
@@ -353,3 +356,4 @@ sum(average_old_output)/len(Y_predict)
 sheet1.write(2, 4, "average_old_output")
 sheet1.write(3, 4, 100-test_average_accuracy)
 wb.save('plot.xls') 
+'''
