@@ -2,10 +2,10 @@ import numpy as np
 from random import randint
 import time
 import copy 
-
+'''
 import xlwt 
 from xlwt import Workbook 
-
+'''
 class NeuralNetwork(object):
     def __init__(self, hiddenSize, inputSize, outputSize):
         # initiate layers
@@ -117,11 +117,11 @@ class NeuralNetwork(object):
             # Random data
             seed = randint(1, epochs*100)
 
-            np.random.seed(seed)
-            np.random.shuffle(X)
+            #np.random.seed(seed)
+            #np.random.shuffle(X)
 
-            np.random.seed(seed)
-            np.random.shuffle(Y)
+            #np.random.seed(seed)
+            #np.random.shuffle(Y)
            
             # iterate through all the training data
             for j, input in enumerate(X):
@@ -131,7 +131,7 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
-                #print(output, " - ", target)
+                print(output, " - ", target)
                 self.backPropagate(error)
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
@@ -142,7 +142,7 @@ class NeuralNetwork(object):
                 sum_errors += self._mse(target, output)
           
             # Epoch complete, report the training error
-            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
+#            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
 
         self.average_err = round(sum_errors / len(X) , 5)
 
@@ -294,45 +294,3 @@ def _confusion_matrix(predict,actually):
     return confusion_matrix
 
 
-X,Y,inputSize,outputSize = _readfile("cross.pat")
-
-#X_train = _normalization(1,0,X.max(),X.min(),X)
-X_train = X
-Y_train = _normalization(0.9,0.1,Y.max(),Y.min(),Y)
-
-hiddenSize = [6]
-
-NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
-
-train_average_accuracy = 0
-test_average_accuracy = 0
-
-for a,b in cross_validations_split(X_train.shape[0],10):
-
-    inTest = np.concatenate((X_train[:a],X_train[b+1:]))
-    outTest = np.concatenate((Y_train[:a],Y_train[b+1:]))
-    NN.train(inTest, outTest, 1000 , 0.1  ,0.8)
-    train_average_accuracy += (1 - NN.average_err)/10
-    test_average_accuracy += (1- np.sum(NN._mse(NN.feedForward(X_train[a:b,:]),Y_train[a:b,:]),axis=0))/10
-
-
-Y_predict = NN.feedForward(X_train)
-matrix = _confusion_matrix(Y_predict,Y)
-matrix = np.float64(matrix)
-
-
-wb = Workbook() 
-sheet1 = wb.add_sheet('Sheet 1')
-
-sheet1.write(2, 2, "train_average_accuracy") 
-sheet1.write(3, 2, train_average_accuracy*100)
-sheet1.write(2, 3, "test_average_accuracy")
-sheet1.write(3, 3, test_average_accuracy*100)
-sheet1.write(2, 4, "test_average_accuracy")
-sheet1.write(3, 4, matrix[0][0])
-sheet1.write(3, 5, matrix[0][1])
-sheet1.write(4, 4, matrix[1][0])
-sheet1.write(4, 5, matrix[1][1])
-
-
-wb.save('plot.xls') 
