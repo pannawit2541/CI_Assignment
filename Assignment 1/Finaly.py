@@ -2,10 +2,7 @@ import numpy as np
 from random import randint
 import time
 import copy 
-'''
-import xlwt 
-from xlwt import Workbook 
-'''
+
 class NeuralNetwork(object):
     def __init__(self, hiddenSize, inputSize, outputSize):
         # initiate layers
@@ -18,7 +15,7 @@ class NeuralNetwork(object):
         # initiate weights
         weights = []
         for i in range(len(layers)-1):
-            w = -5*np.random.rand(layers[i], layers[i+1])+1
+            w = np.random.rand(layers[i], layers[i+1])
             weights.append(w)
         self.weights = weights
 
@@ -117,12 +114,12 @@ class NeuralNetwork(object):
             # Random data
             seed = randint(1, epochs*100)
 
-            #np.random.seed(seed)
-            #np.random.shuffle(X)
+            np.random.seed(seed)
+            np.random.shuffle(X)
 
-            #np.random.seed(seed)
-            #np.random.shuffle(Y)
-           
+            np.random.seed(seed)
+            np.random.shuffle(Y)
+        
             # iterate through all the training data
             for j, input in enumerate(X):
                 target = Y[j]
@@ -131,7 +128,7 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
-                print(output, " - ", target)
+                
                 self.backPropagate(error)
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
@@ -142,7 +139,7 @@ class NeuralNetwork(object):
                 sum_errors += self._mse(target, output)
           
             # Epoch complete, report the training error
-#            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
+            print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
 
         self.average_err = round(sum_errors / len(X) , 5)
 
@@ -281,7 +278,7 @@ def _confusion_matrix(predict,actually):
     confusion_matrix = np.array([[0, 0], [0, 0]])
 
     for i in range(len(predict)):
-        print(predict[i] , actually[i])
+        
         if predict[i][0] >= predict[i][1]:
             label = [1,0]
         else :
@@ -289,8 +286,49 @@ def _confusion_matrix(predict,actually):
         matrix = _create_matrix(label,actually[i])
         confusion_matrix = np.add(confusion_matrix,matrix)
     
-    print(confusion_matrix)
-
     return confusion_matrix
+
+
+filename = input('Enter file name : ')
+X,Y,inputSize,outputSize = _readfile(filename)
+print("What Size of Hidden layer Neural Network ?")
+print(" -- Example : '4-2-2' --")
+print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
+hiddenSize = input('Enter hidden size : ')
+hiddenSize = hiddenSize.split("-")
+hiddenSize = list(map(int, hiddenSize))
+learning_rate = input('Enter learning rate : ')
+momentum_rate = input('Enter momentum rate : ')
+epochs = input('Enter epoch : ')
+
+if filename == "Flood_dataset.txt":
+    X_train = _normalization(1,0,X.max(),X.min(),X)
+    Y_train = _normalization(1,0,Y.max(),Y.min(),Y)
+else : 
+    X_train = X
+    Y_train = _normalization(0.9,0.1,Y.max(),Y.min(),Y)
+
+
+NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
+
+train_average_accuracy = 0
+test_average_accuracy = 0
+
+for a,b in cross_validations_split(X_train.shape[0],10):
+
+    inTest = np.concatenate((X_train[:a],X_train[b+1:]))
+    outTest = np.concatenate((Y_train[:a],Y_train[b+1:]))
+    NN.train(inTest, outTest, int(epochs) , float(learning_rate)  , float(momentum_rate))
+    train_average_accuracy += (1 - NN.average_err)/10
+    test_average_accuracy += (1- np.sum(NN._mse(NN.feedForward(X_train[a:b,:]),Y_train[a:b,:]),axis=0))/10
+
+print("Test_average  : ",test_average_accuracy)
+print("Train_average : ",train_average_accuracy)
+
+if filename != "Flood_dataset.txt":
+    Y_predict = NN.feedForward(X_train)
+    print(_confusion_matrix(Y_predict,Y))
+#matrix = np.float64(matrix)
+
 
 
