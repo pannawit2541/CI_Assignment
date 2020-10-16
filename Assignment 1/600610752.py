@@ -1,7 +1,7 @@
 import numpy as np
-import copy
-import sys
-
+from random import randint
+import time
+import copy 
 
 class NeuralNetwork(object):
     def __init__(self, hiddenSize, inputSize, outputSize):
@@ -19,12 +19,23 @@ class NeuralNetwork(object):
             weights.append(w)
         self.weights = weights
 
+        # initiate weights_t-1
+
+        self.weights_befoe  = copy.deepcopy(self.weights)
+        self.weights_next  = copy.deepcopy(self.weights)
+
+
         # initiate bias
         bias = []
         for i in range(len(layers)-1):
             b = np.random.rand(layers[i+1])
             bias.append(b)
         self.bias = bias        
+
+        # initiate bias_t-1
+        self.bias_before  = copy.deepcopy(self.bias)
+        self.bias_next  = copy.deepcopy(self.bias)
+
 
         # initiate activations
         activations = []
@@ -33,12 +44,22 @@ class NeuralNetwork(object):
             activations.append(a)
         self.activations = activations
 
-        derivatives = []
+        # initiate gradient_b
+        derivatives_b = []
+        for i in range(len(layers) - 1): 
+            d = np.zeros(layers[i+1])
+            derivatives_b.append(d)
+        self.derivatives_b = derivatives_b
+
+        # initiate gradient_w
+        derivatives_w = []
         for i in range(len(layers) - 1):
             d = np.zeros((layers[i], layers[i + 1]))
-            derivatives.append(d)
-        self.derivatives = derivatives
-        self.derivatives_old = copy.deepcopy(self.derivatives)
+            derivatives_w.append(d)
+        self.derivatives_w = derivatives_w
+
+        # initiate average_err
+        self.average_err = 0
 
     def sigmoid(self, s, deriv=False):
         if (deriv == True):
@@ -58,7 +79,7 @@ class NeuralNetwork(object):
         return activations
 
     def backPropagate(self, error):
-        for i in reversed(range(len(self.derivatives))):
+        for i in reversed(range(len(self.derivatives_w))):
 
             # get activation for previous layer
             activations = self.activations[i+1]
@@ -69,6 +90,8 @@ class NeuralNetwork(object):
             # reshape delta as to have it as a 2d array
             delta_re = delta.reshape(delta.shape[0], -1).T
 
+            self.derivatives_b[i] = copy.deepcopy(delta)
+
             # get activations for current layer
             current_activations = self.activations[i]
 
@@ -77,7 +100,8 @@ class NeuralNetwork(object):
                 current_activations.shape[0], -1)
 
             # save derivative after applying matrix multiplication
-            self.derivatives[i] = np.dot(current_activations, delta_re)
+            self.derivatives_w[i] = np.dot(current_activations, delta_re)
+
 
             # backpropogate the next error
             error = np.dot(delta, self.weights[i].T)
@@ -86,7 +110,16 @@ class NeuralNetwork(object):
         # now enter the training loop
         for i in range(epochs):
             sum_errors = 0
+       
+            # Random data
+            seed = randint(1, epochs*100)
 
+            np.random.seed(seed)
+            np.random.shuffle(X)
+
+            np.random.seed(seed)
+            np.random.shuffle(Y)
+        
             # iterate through all the training data
             for j, input in enumerate(X):
                 target = Y[j]
@@ -95,54 +128,71 @@ class NeuralNetwork(object):
                 output = self.feedForward(input)
 
                 error = target - output
-                print(output, " - ", target)
-                if i > 0 :
-                    self.derivatives_old = copy.deepcopy(self.derivatives)
+                
                 self.backPropagate(error)
                 # now perform gradient descent on the derivatives
                 # (this will update the weights
-                if i == 0:
-                    self.derivatives_old = copy.deepcopy(self.derivatives)
+                
                 self.gradient_descent(learning_rate,momentumRate)
 
                 # keep track of the MSE for reporting later
                 sum_errors += self._mse(target, output)
-        
+          
             # Epoch complete, report the training error
             print("Error: {} at epoch {}".format(round(sum_errors / len(X) , 5), i+1))
-        self.sum_all_err = sum_errors/len(X)
+
+        self.average_err = round(sum_errors / len(X) , 5)
+
         print("Training complete! : ",sum_errors/len(X))
         print("=====")
 
     def gradient_descent(self, learningRate=1,momentumRate=1):
-        # update the weights by stepping down the gradient
-        for i in range(len(self.weights)):
-            weights = self.weights[i]
-            bias = self.bias[i]
-            derivatives = self.derivatives[i]
-            derivatives_old  = self.derivatives_old[i]
-            delta = (derivatives * learningRate) + ((derivatives-derivatives_old)*momentumRate)
-            weights += delta
-            delta = np.dot(delta.T,np.ones(delta.T.shape[1]))
-            bias += delta
 
+        # update the weights by stepping down the gradient
+        
+        for i in range(len(self.weights)):
+
+            weights = self.weights[i]
+            weights_befoe = self.weights_befoe[i]
+            weights_next = self.weights_next[i]
+
+            bias = self.bias[i]
+            bias_before = self.bias_before[i]
+            bias_next = self.bias_next[i]
+
+            derivatives_w = self.derivatives_w[i]
+
+            derivatives_b = self.derivatives_b[i]
+
+            weights_next += (derivatives_w * learningRate) + ((weights-weights_befoe)*momentumRate)
+
+            bias_next += (derivatives_b * learningRate) + ((bias-bias_before)*momentumRate)
+
+
+        self.weights_befoe = copy.deepcopy(self.weights)
+        self.weights = copy.deepcopy(self.weights_next)
+
+        self.bias_before = copy.deepcopy(self.bias)
+        self.bias = copy.deepcopy(self.bias_next)
+     
     def _mse(self, target, output):
         return np.average((target - output) ** 2)
 
+def _normalization(NewMax,NewMin,OldMax,OldMin,OldValue):
 
-def convert_output(max,min,data,flag = False):
-    if flag == True:
-        return  ( data*(max-min)) + min
-    return  (data - min) / (max - min)
+    OldRange = (OldMax - OldMin)  
+    NewRange = (NewMax - NewMin)  
+    NewValue = (((OldValue - OldMin) * NewRange) / OldRange) + NewMin
+        
+    return  NewValue
 
-def convert_input(data):
-    mean = data.mean(axis = 0)
-    sd = data.std(axis = 0)
-    return (data- mean)/ sd
+def _readfile(txt):
 
-def Preprocessing():
+    output = []
+    input = []
 
-        # import data set
+    if txt == "Flood_dataset.txt":
+                # import data set
         with open("Flood_dataset.txt", "r") as f:
             content = f.readlines()
         del content[0:3]
@@ -156,23 +206,13 @@ def Preprocessing():
         output = [list(map(int, X[8:])) for X in data]
         input = [list(map(int, X[:8])) for X in data]
 
-        input = np.array(input)
-        output = np.array(output)
-        #print(output)
-        inputSize = input.shape[1]
-        outputSize = output.shape[1]
 
-        return input, output, inputSize, outputSize
 
-def Preprocessing_Cross():
-    # import data set
+    elif txt == "cross.pat":
+        # import data set
         with open("cross.pat", "r") as f:
             content = f.readlines()
-        del content[0:3]
 
-        # split data set
-        output = []
-        input = []
         for i,X in enumerate(content):
             if X[0] != 'p':
                 if (i+1)%3 == 0:
@@ -181,88 +221,114 @@ def Preprocessing_Cross():
                 else:
                     a,b = X.split()
                     input.append([float(a),float(b)])
-        input = np.array(input)
-        output = np.array(output)
-        #print(input)
-        inputSize = input.shape[1]
-        outputSize = output.shape[1]
+            
+    else:
+        print("-- Not found a data / Missing data --")
 
-        return input, output, inputSize, outputSize
-  
+    # Convert to np_array
 
-def cross_validations_split(dataset,output_dataset,folds):
-    fold_size = int(dataset.shape[0] * folds/100)
+    input = np.array(input)
+    output = np.array(output)
+
+    seed = randint(1, len(input)*100)
+
+    np.random.seed(seed)
+    np.random.shuffle(input)
+
+    np.random.seed(seed)
+    np.random.shuffle(output)
+    # Shape input and output
+
+    inputSize = input.shape[1]
+    outputSize = output.shape[1]
+
+    return input, output, inputSize, outputSize
+
+def cross_validations_split(shape,folds):
+    fold_size = int(shape * folds/100)
     k = 0
     index = []
     for i in range(1,folds+1):
         if i < folds:
             index.append([k,i*fold_size])
         else:
-            index.append([k,dataset.shape[0]])
+            index.append([k,shape])
         k = i*fold_size
     return index
 
+def _confusion_matrix(predict,actually):
+
+    def _create_matrix(label,act):
+
+        matrix = np.array([[0, 0], [0, 0]])
+
+        if act[0] == 0 :
+            if label[0] == 0 :
+                matrix[0][0] += 1
+            else :
+                matrix[0][1] += 1
+        else :
+            if label[0] == 1 :
+                matrix[1][1] += 1
+            else :
+                matrix[1][0] += 1
+        
+        return matrix
+
+    confusion_matrix = np.array([[0, 0], [0, 0]])
+
+    for i in range(len(predict)):
+        
+        if predict[i][0] >= predict[i][1]:
+            label = [1,0]
+        else :
+            label = [0,1]
+        matrix = _create_matrix(label,actually[i])
+        confusion_matrix = np.add(confusion_matrix,matrix)
+    
+    return confusion_matrix
 
 
-model = 'B'
-'''
-while(True):
-    print(' -- Please press one to training --> A or B -- ')
-    print(' -- A : flood_dataset , B : cross_dataset -- ')
-    print(' -- q : to exit -- ')
-    model = input()
-    print(type(model))
-    if model == 'q' or model == 'Q':
-        sys.exit()
-    elif model == 'A' or model == 'a' or model == 'B' or model == 'b' or  model == 'q' :
-        break
-'''
-
+filename = input('Enter file name : ')
+X,Y,inputSize,outputSize = _readfile(filename)
 print("What Size of Hidden layer Neural Network ?")
 print(" -- Example : '4-2-2' --")
 print(" -- Hidden layer have 3 layers and 4,2,2 nodes respectively -- ")
-'''
-hiddenSizeStr = input('Size of Hidden layer : ')
-learningRate = input('Learning Rate : ')
-learningRate = float(learningRate)
-momentumRate = input('Momentum Rate : ')
-momentumRate = float(momentumRate)
-epochs = input('Epochs : ')
-epochs = int(epochs)
-hiddenSize = hiddenSizeStr.split("-")
+hiddenSize = input('Enter hidden size : ')
+hiddenSize = hiddenSize.split("-")
 hiddenSize = list(map(int, hiddenSize))
-'''
-learningRate = 0.8
-momentumRate = 0.2
-epochs = 1000
-hiddenSize = [3,3]
-sum_avg_train = 0
-sum_avg_predict = 0
+learning_rate = input('Enter learning rate : ')
+momentum_rate = input('Enter momentum rate : ')
+epochs = input('Enter epoch : ')
 
-if model == 'A' or model == 'a':
-    X, Y, inputSizeX, outputSizeY = Preprocessing()
-    max,min = Y.max(),Y.min()
-    y = convert_output(max,min,Y)
-    x = convert_input(X)
-    index_flood = cross_validations_split(x,y,10)
-    NN_flood = NeuralNetwork(hiddenSize, inputSizeX, outputSizeY)
-    for a,b in index_flood:
-        inTest = np.concatenate((x[:a],x[b+1:]))
-        outTest = np.concatenate((y[:a],y[b+1:]))
-        NN_flood.train(inTest, outTest, 1000, 0.1,0.5)
-        sum_avg_train += NN_flood.sum_all_err
-        sum_avg_predict += np.sum(NN_flood._mse(NN_flood.feedForward(x[a:b,:]),y[a:b,:]),axis=0)
-else:
-    A, B, inputSizeA, outputSizeB = Preprocessing_Cross()
-    index_cross = cross_validations_split(A,B,10)
-    NN_cross = NeuralNetwork(hiddenSize, inputSizeA, outputSizeB)
-    for a,b in index_cross:
-        inTest = np.concatenate((A[:a],A[b+1:]))
-        outTest = np.concatenate((B[:a],B[b+1:]))
-        NN_cross.train(inTest, outTest, 1000, 0.8,0.2)
-        sum_avg_train += NN_cross.sum_all_err
-        sum_avg_predict += np.sum(NN_cross._mse(NN_cross.feedForward(A[a:b,:]),B[a:b,:]),axis=0)
+if filename == "Flood_dataset.txt":
+    X_train = _normalization(1,0,X.max(),X.min(),X)
+    Y_train = _normalization(1,0,Y.max(),Y.min(),Y)
+else : 
+    X_train = X
+    Y_train = _normalization(0.9,0.1,Y.max(),Y.min(),Y)
 
-print("Error average training : ",sum_avg_train/10)
-print("Error average testing : ",sum_avg_predict/10)  
+
+NN = NeuralNetwork(hiddenSize, inputSize, outputSize)
+
+train_average_accuracy = 0
+test_average_accuracy = 0
+
+for a,b in cross_validations_split(X_train.shape[0],10):
+
+    inTest = np.concatenate((X_train[:a],X_train[b+1:]))
+    outTest = np.concatenate((Y_train[:a],Y_train[b+1:]))
+    NN.train(inTest, outTest, int(epochs) , float(learning_rate)  , float(momentum_rate))
+    train_average_accuracy += (1 - NN.average_err)/10
+    test_average_accuracy += (1- np.sum(NN._mse(NN.feedForward(X_train[a:b,:]),Y_train[a:b,:]),axis=0))/10
+
+print("Test_average  : ",test_average_accuracy)
+print("Train_average : ",train_average_accuracy)
+
+if filename != "Flood_dataset.txt":
+    Y_predict = NN.feedForward(X_train)
+    print(_confusion_matrix(Y_predict,Y))
+#matrix = np.float64(matrix)
+
+
 
