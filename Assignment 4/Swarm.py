@@ -25,12 +25,16 @@ class Particle_of_swarm(object):
             velocitys.append(v)
         self.velocitys = velocitys
 
-        self.pbest = -1
+        self.pbest = float('inf')
 
     def feedForward(self, X):
         Output_node = X
         for i, p in enumerate(self.positions):
-     
+            
+            # print("i = ",i,len(self.positions))
+            # print(Output_node.shape)
+            # print(p.shape)
+            # print("========================================")
             Output_node = np.dot(Output_node, p)
 
         return Output_node
@@ -51,6 +55,8 @@ class Particle_of_swarm(object):
 
     def _mae(self, target, output):
         return np.average(abs(target - output))
+
+
 
 
 def _readfile(file):
@@ -84,35 +90,30 @@ def _readfile(file):
 Input, Output = _readfile('data/AirQualityUCI.csv')
 
 particles = []
-num_of_particle = 1
+num_of_particle = 10
 
 for i in range(0, num_of_particle):
     par = Particle_of_swarm([4], 8, 2)
     particles.append(par)
 
-# print(particles[0].positions[0])
 
 for i in range(10):
-    print("===================== ",i)
+    print("===================== ",i," =====================")
     for p in particles:
-        fx = p.object_funct(Input[0], Output[0])
+        fx = p.object_funct(Input, Output)
         # check pbest
-
+        #print("fx = ",fx,"pbest = ",p.pbest)
         if fx < p.pbest:
+            print("fx = ",fx,"pbest = ",p.pbest)
             p.pbest = fx
             p.positions_best = p.positions.copy()
 
         # update velocity
         for i in range(0, len(p.velocitys)):
-            print("v",p.velocitys[i].shape)
-            print("pb",p.positions_best[i].shape)
-            print("p",p.positions[i].shape)
             p.velocitys[i] = p.velocitys[i] + 2.2 * \
                 (p.positions_best[i]-p.positions[i])
 
         # update position
-
-        p.positions = p.positions + p.velocitys
-
-
-# print(particles[0].positions[0])
+        for i in range(0, len(p.velocitys)):
+            p.positions[i] = p.positions[i] + p.velocitys[i]
+       
